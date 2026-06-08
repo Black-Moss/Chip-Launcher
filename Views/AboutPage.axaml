@@ -118,7 +118,7 @@
                    Margin="40,8"
                    Opacity="0.3" />
 
-            <!-- 功能列表 -->
+           <!-- 功能列表 -->
             <StackPanel Spacing="6" Margin="0,4,0,0">
                 <TextBlock Text="📦 模组管理 — 安装、启用/禁用、删除、批量操作"
                            FontSize="12" Foreground="#888" HorizontalAlignment="Center" />

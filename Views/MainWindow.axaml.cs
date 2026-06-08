@@ -1,3 +1,4 @@
+using System.Diagnostics;
 using Avalonia;
 using Avalonia.Controls;
 using Avalonia.Input;
@@ -7,6 +8,7 @@ using ChipLauncher.Models;
 using ChipLauncher.Services;
 using ChipLauncher.Views;
 using SukiUI.Controls;
+using SukiUI.Dialogs;
 using SukiUI.Toasts;
 
 namespace ChipLauncher.Views;
@@ -24,6 +26,9 @@ public partial class MainWindow : SukiWindow
     /// <summary>SukiUI Toast 管理器（全局可访问）</summary>
     public static ISukiToastManager ToastManager { get; } = new SukiToastManager();
 
+    /// <summary>SukiUI Dialog 管理器（全局可访问）</summary>
+    public static ISukiDialogManager DialogManager { get; } = new SukiDialogManager();
+
     public MainWindow()
     {
         InitializeComponent();
@@ -38,6 +43,9 @@ public partial class MainWindow : SukiWindow
 
         // 绑定 Toast 主机
         ToastHost.Manager = ToastManager;
+
+        // 绑定 Dialog 主机
+        DialogHost.Manager = DialogManager;
 
         // SukiToastManager 不支持通知类型颜色，直接通过内容前缀区分
 
@@ -89,6 +97,10 @@ public partial class MainWindow : SukiWindow
         // 确保 SukiSideMenu 完全初始化后再设置默认选中页
         var defaultPage = AppConfig.Instance.DefaultPage;
         SelectSideMenuItem(defaultPage);
+
+        // 启动后检查更新（延迟让 UI 先渲染完成）
+        if (AppConfig.Instance.AutoCheckUpdates)
+            _ = CheckForUpdatesAsync();
     }
 
     /// <summary>根据配置选择 SukiSideMenu 默认项，先取消所有项选中</summary>
@@ -108,6 +120,44 @@ public partial class MainWindow : SukiWindow
             _ => SideMenuNews
         };
         target.IsSelected = true;
+    }
+
+    // ===== 更新检查 =====
+
+    /// <summary>检查更新，若有新版本则弹窗提示</summary>
+    internal static async Task CheckForUpdatesAsync()
+    {
+        try
+        {
+            var result = await UpdateService.CheckForUpdateAsync();
+            if (result == null) return;
+
+            var (version, url) = result.Value;
+
+            // 延迟一点让对话框管理器就绪
+            await Task.Delay(500);
+
+            DialogManager.CreateDialog()
+                .WithTitle("发现新版本")
+                .WithContent($"Chip Launcher v{version} 已发布，是否前往下载？")
+                .WithActionButton("稍后再说", _ => { }, true)
+                .WithActionButton("前往下载", _ =>
+                {
+                    try
+                    {
+                        Process.Start(new ProcessStartInfo(url) { UseShellExecute = true });
+                    }
+                    catch (Exception ex)
+                    {
+                        Logger.Error($"打开下载页失败: {ex.Message}");
+                    }
+                }, true, "Flat", "Accent")
+                .TryShow();
+        }
+        catch (Exception ex)
+        {
+            Logger.Warn($"自动检查更新失败: {ex.Message}");
+        }
     }
 
     // ===== 窗口级拖放安装模组 =====

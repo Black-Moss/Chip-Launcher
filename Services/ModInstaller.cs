@@ -1,4 +1,6 @@
 using System.Reflection;
+using System.Reflection.Metadata;
+using System.Reflection.PortableExecutable;
 using System.Runtime.InteropServices;
 using SharpCompress.Archives;
 using SharpCompress.Common;
@@ -228,46 +230,132 @@ public class ModInstaller
         });
     }
 
-    /// <summary>从 DLL 读取 [BepInPlugin(Guid, Name, Version)] 的三个参数</summary>
+    /// <summary>从 DLL 直接读取 [BepInPlugin(Guid, Name, Version)] 的三个参数（无需解析依赖）</summary>
     public static (string? Guid, string? Name, string? Version) GetBepInPluginInfo(string dllPath)
     {
         try
         {
-            var dllDir = Path.GetDirectoryName(Path.GetFullPath(dllPath))!;
-            var runtimeDir = RuntimeEnvironment.GetRuntimeDirectory();
+            using var stream = File.OpenRead(dllPath);
+            using var peReader = new PEReader(stream);
+            var metadataReader = peReader.GetMetadataReader();
 
-            // 收集所有可能的依赖 DLL 路径（含 BepInEx/core/）
-            var allDlls = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
-            foreach (var dir in GetAssemblySearchDirs(dllDir))
+            foreach (var typeDefHandle in metadataReader.TypeDefinitions)
             {
-                if (Directory.Exists(dir))
-                    foreach (var dll in Directory.GetFiles(dir, "*.dll"))
-                        allDlls.Add(dll);
+                var typeDef = metadataReader.GetTypeDefinition(typeDefHandle);
+                foreach (var attrHandle in typeDef.GetCustomAttributes())
+                {
+                    var attr = metadataReader.GetCustomAttribute(attrHandle);
+
+                    // 获取特性类型名称
+                    var attrTypeName = GetAttributeTypeName(metadataReader, attr.Constructor);
+                    if (attrTypeName == null) continue;
+                    if (attrTypeName != "BepInPlugin" && attrTypeName != "BepInPluginAttribute"
+                        && !attrTypeName.EndsWith(".BepInPlugin") && !attrTypeName.EndsWith(".BepInPluginAttribute"))
+                        continue;
+
+                    // 解析 BepInPlugin(Guid, Name, Version) 的三个字符串参数
+                    return ParseBepInPluginAttribute(metadataReader, attr);
+                }
             }
 
-            var resolver = new PathAssemblyResolver(allDlls.ToArray());
-            using var mlc = new MetadataLoadContext(resolver);
-            var asm = mlc.LoadFromAssemblyPath(dllPath);
-
-            // [BepInPlugin] 是类级别特性，必须遍历所有类型
-            var attr = asm.GetTypes()
-                .SelectMany(t => t.GetCustomAttributesData())
-                .FirstOrDefault(a => a.AttributeType.Name == "BepInPlugin"
-                                  || a.AttributeType.Name == "BepInPluginAttribute");
-
-            if (attr == null)
-                return (null, null, null);
-
-            var guid = attr.ConstructorArguments.ElementAtOrDefault(0).Value as string;
-            var name = attr.ConstructorArguments.ElementAtOrDefault(1).Value as string;
-            var version = attr.ConstructorArguments.ElementAtOrDefault(2).Value as string;
-            return (guid, name, version);
+            return (null, null, null);
         }
         catch (Exception ex)
         {
             Logger.Warn($"读取模组特性失败: {dllPath} - {ex.GetType().Name}: {ex.Message}");
             return (null, null, null);
         }
+    }
+
+    /// <summary>获取特性构造函数的类型全名</summary>
+    private static string? GetAttributeTypeName(MetadataReader reader, EntityHandle constructor)
+    {
+        try
+        {
+            if (constructor.Kind == HandleKind.MemberReference)
+            {
+                var memberRef = reader.GetMemberReference((MemberReferenceHandle)constructor);
+                if (memberRef.Parent.Kind == HandleKind.TypeReference)
+                {
+                    var typeRef = reader.GetTypeReference((TypeReferenceHandle)memberRef.Parent);
+                    var nameSpace = reader.GetString(typeRef.Namespace);
+                    var name = reader.GetString(typeRef.Name);
+                    return string.IsNullOrEmpty(nameSpace) ? name : $"{nameSpace}.{name}";
+                }
+                if (memberRef.Parent.Kind == HandleKind.TypeDefinition)
+                {
+                    var typeDef = reader.GetTypeDefinition((TypeDefinitionHandle)memberRef.Parent);
+                    var name = reader.GetString(typeDef.Name);
+                    return name;
+                }
+            }
+            else if (constructor.Kind == HandleKind.MethodDefinition)
+            {
+                var methodDef = reader.GetMethodDefinition((MethodDefinitionHandle)constructor);
+                var typeDef = reader.GetTypeDefinition(methodDef.GetDeclaringType());
+                var name = reader.GetString(typeDef.Name);
+                return name;
+            }
+        }
+        catch
+        {
+            // ignore
+        }
+
+        return null;
+    }
+
+    /// <summary>解析 BepInPlugin(Guid, Name, Version) 特性的三个字符串参数</summary>
+    private static (string? Guid, string? Name, string? Version) ParseBepInPluginAttribute(
+        MetadataReader reader, CustomAttribute attr)
+    {
+        var valueReader = reader.GetBlobReader(attr.Value);
+
+        // 跳过固定 prolog（2 字节，应为 0x0001）
+        if (valueReader.Length < 2) return (null, null, null);
+        valueReader.ReadUInt16();
+
+        // 读取三个字符串参数
+        var guid = ReadSerializedString(ref valueReader);
+        var name = ReadSerializedString(ref valueReader);
+        var version = ReadSerializedString(ref valueReader);
+
+        return (guid, name, version);
+    }
+
+    /// <summary>从自定义特性值 Blob 中读取序列化字符串（ECMA-335 SerString / PackedLen）</summary>
+    private static string? ReadSerializedString(ref BlobReader reader)
+    {
+        if (reader.RemainingBytes == 0) return null;
+
+        var b = reader.ReadByte();
+        if (b == 0xFF) return null; // null
+
+        // 压缩无符号整数（ECMA-335 II.23.2）
+        int length;
+        if ((b & 0x80) == 0)
+        {
+            // 0x00-0x7F：单字节编码长度
+            length = b;
+        }
+        else if ((b & 0xC0) == 0x80)
+        {
+            // 0x80-0xBF：双字节编码长度
+            var b2 = reader.ReadByte();
+            length = ((b & 0x3F) << 8) | b2;
+        }
+        else
+        {
+            // 0xC0-0xDF：四字节编码长度
+            var b2 = reader.ReadByte();
+            var b3 = reader.ReadByte();
+            var b4 = reader.ReadByte();
+            length = ((b & 0x1F) << 24) | (b2 << 16) | (b3 << 8) | b4;
+        }
+
+        if (length == 0) return string.Empty;
+        var chars = reader.ReadBytes(length);
+        return System.Text.Encoding.UTF8.GetString(chars);
     }
 
     /// <summary>获取程序集解析搜索目录列表（含 BepInEx/core）</summary>

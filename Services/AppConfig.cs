@@ -25,6 +25,7 @@ public class AppConfig : INotifyPropertyChanged
 
     private int _maxRetries = 5;
     private bool _confirmModDeletion = true;
+    private bool _autoCheckUpdates = true;
 
     // ── 防抖保存 ──────────────────────────────────────────────
 
@@ -128,6 +129,19 @@ public class AppConfig : INotifyPropertyChanged
         }
     }
 
+    /// <summary>启动时是否自动检查更新</summary>
+    public bool AutoCheckUpdates
+    {
+        get => _autoCheckUpdates;
+        set
+        {
+            if (_autoCheckUpdates == value) return;
+            _autoCheckUpdates = value;
+            OnPropertyChanged();
+            Save();
+        }
+    }
+
     /// <summary>标题栏游戏文本轮播间隔（秒，默认 3，JSON 序列化用此属性）</summary>
     public int TextRotationInterval
     {
@@ -215,6 +229,29 @@ public class AppConfig : INotifyPropertyChanged
                 Logger.Error("保存配置文件失败", ex);
             }
         }, token);
+    }
+
+    /// <summary>重置所有配置为默认值并保存</summary>
+    public void Reset()
+    {
+        _gamePath = null;
+        _defaultPage = "News";
+        _maxRetries = 5;
+        _confirmModDeletion = true;
+        _autoCheckUpdates = true;
+        _textRotationInterval = 3;
+
+        OnPropertyChanged(nameof(GamePath));
+        OnPropertyChanged(nameof(DefaultPage));
+        OnPropertyChanged(nameof(DefaultPageIndex));
+        OnPropertyChanged(nameof(MaxRetries));
+        OnPropertyChanged(nameof(MaxRetriesText));
+        OnPropertyChanged(nameof(ConfirmModDeletion));
+        OnPropertyChanged(nameof(AutoCheckUpdates));
+        OnPropertyChanged(nameof(TextRotationInterval));
+        OnPropertyChanged(nameof(TextRotationIntervalText));
+
+        Save();
     }
 
     private void OnPropertyChanged([CallerMemberName] string? name = null)

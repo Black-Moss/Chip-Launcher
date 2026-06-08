@@ -2,22 +2,7 @@
              xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
              xmlns:services="using:ChipLauncher.Services"
              x:Class="ChipLauncher.Views.SettingsPage">
-    <Grid Margin="15">
-        <Grid.RowDefinitions>
-            <RowDefinition Height="Auto" />
-            <RowDefinition Height="Auto" />
-            <RowDefinition Height="Auto" />
-            <RowDefinition Height="Auto" />
-            <RowDefinition Height="Auto" />
-            <RowDefinition Height="Auto" />
-            <RowDefinition Height="Auto" />
-            <RowDefinition Height="Auto" />
-            <RowDefinition Height="Auto" />
-            <RowDefinition Height="Auto" />
-            <RowDefinition Height="Auto" />
-            <RowDefinition Height="Auto" />
-            <RowDefinition Height="*" />
-        </Grid.RowDefinitions>
+    <Grid Margin="15" RowDefinitions="Auto,Auto,Auto,Auto,Auto,Auto,Auto,Auto,Auto,Auto,Auto,Auto,*">
 
         <TextBlock Text="设置"
                    Classes="PageTitle" />
@@ -115,6 +100,31 @@
                        Margin="8,0,0,0" />
         </Grid>
 
+        <!-- 自动检查更新 -->
+        <Grid Grid.Row="6" Margin="0,0,0,12" ColumnDefinitions="100,120,*,Auto"
+              Name="SettingsAutoUpdateRow">
+            <TextBlock Text="自动更新："
+                       Foreground="{StaticResource TextSecondaryBrush}"
+                       FontSize="14"
+                       VerticalAlignment="Center" />
+            <ToggleSwitch Grid.Column="1"
+                          IsChecked="{Binding AutoCheckUpdates, Source={x:Static services:AppConfig.Instance}, Mode=TwoWay}"
+                          OnContent="开启"
+                          OffContent="关闭" />
+            <TextBlock Grid.Column="2"
+                       Text="启动时自动检查 GitHub 新版本"
+                       Foreground="{StaticResource TextSecondaryBrush}"
+                       FontSize="12"
+                       Opacity="0.5"
+                       VerticalAlignment="Center"
+                       Margin="8,0,0,0" />
+            <Button Grid.Column="3" Classes="Flat"
+                    Content="检查更新"
+                    FontSize="12"
+                    Padding="12,5"
+                    Click="OnCheckUpdateClick" />
+        </Grid>
+
         <!-- 删除模组确认 -->
         <Grid Grid.Row="7" Margin="0,0,0,12" ColumnDefinitions="100,120,*"
               Name="SettingsDeleteConfirmRow">
@@ -135,8 +145,8 @@
                        Margin="8,0,0,0" />
         </Grid>
 
-        <!-- 清除缓存 -->
-        <StackPanel Grid.Row="9" Orientation="Horizontal" Spacing="15" Margin="0,10,0,0"
+        <!-- 清除缓存 + 重置设置 -->
+        <StackPanel Grid.Row="8" Orientation="Horizontal" Spacing="15" Margin="0,10,0,0"
                     Name="SettingsCacheRow">
             <Button Classes="Flat"
                     Name="BtnClearCache"
@@ -144,6 +154,12 @@
                     Padding="15,8"
                     FontSize="13"
                     Click="OnClearCacheClick" />
+            <Button Classes="Flat"
+                    Name="BtnResetSettings"
+                    Content="重置设置"
+                    Padding="15,8"
+                    FontSize="13"
+                    Click="OnResetSettingsClick" />
             <TextBlock Text="删除本地缓存的 Steam 资讯文件，下次打开资讯页时将重新拉取"
                        Foreground="{StaticResource TextSecondaryBrush}"
                        FontSize="12"
@@ -152,7 +168,7 @@
         </StackPanel>
 
         <!-- 提示 -->
-        <TextBlock Grid.Row="10"
+        <TextBlock Grid.Row="9"
                    Text="设置修改后自动保存"
                    Foreground="{StaticResource TextSecondaryBrush}"
                    FontSize="13"

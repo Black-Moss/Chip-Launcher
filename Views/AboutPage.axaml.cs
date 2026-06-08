@@ -2,9 +2,12 @@ using System.Diagnostics;
 using System.Reflection;
 using Avalonia.Controls;
 using Avalonia.Input;
+using Avalonia.Interactivity;
 using Avalonia.Media.Imaging;
 using Avalonia.Platform;
 using ChipLauncher.Models;
+using ChipLauncher.Services;
+using SukiUI.Dialogs;
 
 namespace ChipLauncher.Views;
 

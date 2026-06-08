@@ -10,6 +10,7 @@ using Avalonia.Media;
 using Avalonia.Platform.Storage;
 using ChipLauncher.Models;
 using ChipLauncher.Services;
+using SukiUI.Dialogs;
 
 namespace ChipLauncher.Views;
 
@@ -793,6 +794,31 @@ public partial class ModsPage : UserControl
             ok ? NotificationType.Success : NotificationType.Error);
     }
 
+    /// <summary>重置配置到默认值</summary>
+    private void OnResetConfigClick(object? sender, RoutedEventArgs e)
+    {
+        if (_currentConfig == null) return;
+
+        foreach (var entry in _currentConfig.Entries)
+        {
+            if (!string.IsNullOrEmpty(entry.DefaultValue))
+                entry.Value = entry.DefaultValue;
+        }
+
+        var ok = _currentConfig.Save();
+        if (ok)
+        {
+            // 刷新显示
+            ConfigItemsControl.ItemsSource = null;
+            ConfigItemsControl.ItemsSource = _currentConfig.Entries;
+            AppNotification.Show("配置已重置为默认值", NotificationType.Success);
+        }
+        else
+        {
+            AppNotification.Show("配置重置失败", NotificationType.Error);
+        }
+    }
+
     /// <summary>用默认程序打开当前选中模组的配置文件</summary>
     private async void OnOpenConfigClick(object? sender, RoutedEventArgs e)
     {
@@ -912,22 +938,22 @@ public partial class ModsPage : UserControl
         var selected = _batchSelectedMods.ToList();
         if (selected.Count == 0) return;
 
-        if (AppConfig.Instance.ConfirmModDeletion)
-        {
-            _pendingBatchDelete = selected;
-            DeleteConfirmText.Text = $"确定要删除选中的 {selected.Count} 个模组吗？\n此操作将删除整个模组目录，不可恢复。";
-            DeleteConfirmPanel.IsVisible = true;
-        }
-        else
-        {
-            foreach (var mod in selected)
-                DeleteMod(mod);
+        // 弹窗确认
+        var result = await MainWindow.DialogManager.CreateDialog()
+            .WithTitle("删除选中模组")
+            .WithContent($"确定要删除选中的 {selected.Count} 个模组吗？\n此操作将删除整个模组目录，不可恢复。")
+            .WithActionButton("取消", _ => { }, true)
+            .WithActionButton("确认删除", _ =>
+            {
+                foreach (var mod in selected)
+                    DeleteMod(mod);
 
-            ClearBatchSelection();
-            ClearConfigPanel();
-            LoadMods();
-            AppNotification.Show($"已删除 {selected.Count} 个模组", NotificationType.Success);
-        }
+                ClearBatchSelection();
+                ClearConfigPanel();
+                LoadMods();
+                AppNotification.Show($"已删除 {selected.Count} 个模组", NotificationType.Success);
+            }, true, "Flat", "Accent")
+            .TryShowAsync();
     }
 
     /// <summary>切换 A-Z / Z-A 排序</summary>

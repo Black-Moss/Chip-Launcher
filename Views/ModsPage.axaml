@@ -219,6 +219,11 @@
                         Padding="15,8"
                         FontSize="13"
                         Click="OnSaveConfigClick" />
+                <Button Classes="Flat" Name="BtnResetConfig"
+                        Content="重置配置"
+                        Padding="15,8"
+                        FontSize="13"
+                        Click="OnResetConfigClick" />
                 <Button Classes="Flat" Name="BtnOpenConfig"
                         Content="打开配置"
                         Padding="15,8"

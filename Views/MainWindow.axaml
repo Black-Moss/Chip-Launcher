@@ -14,9 +14,10 @@
                  DragDrop.DragLeave="OnWindowDragLeave"
                  DragDrop.Drop="OnWindowDrop">
 
-    <!-- SukiUI Toast 主机 -->
+    <!-- SukiUI Toast + Dialog 主机 -->
     <suki:SukiWindow.Hosts>
         <suki:SukiToastHost Name="ToastHost" MaxToasts="5" />
+        <suki:SukiDialogHost Name="DialogHost" />
     </suki:SukiWindow.Hosts>
 
     <!-- 标题栏左侧：大标题 + 游戏文本 -->
