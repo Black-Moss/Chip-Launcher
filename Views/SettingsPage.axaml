@@ -14,6 +14,8 @@
             <RowDefinition Height="Auto" />
             <RowDefinition Height="Auto" />
             <RowDefinition Height="Auto" />
+            <RowDefinition Height="Auto" />
+            <RowDefinition Height="Auto" />
             <RowDefinition Height="*" />
         </Grid.RowDefinitions>
 
@@ -115,8 +117,28 @@
                        Margin="8,0,0,0" />
         </Grid>
         
-        <!-- NexusMods 游戏域名 -->
+        <!-- 删除模组确认 -->
         <Grid Grid.Row="7" Margin="0,0,0,12" ColumnDefinitions="100,120,*"
+              Name="SettingsDeleteConfirmRow">
+            <TextBlock Text="删除确认："
+                       Foreground="{StaticResource TextSecondaryBrush}"
+                       FontSize="14"
+                       VerticalAlignment="Center" />
+            <ToggleSwitch Grid.Column="1"
+                          IsChecked="{Binding ConfirmModDeletion, Source={x:Static services:AppConfig.Instance}, Mode=TwoWay}"
+                          OnContent="开启"
+                          OffContent="关闭" />
+            <TextBlock Grid.Column="2"
+                       Text="(删除模组前显示二次确认对话框)"
+                       Foreground="{StaticResource TextSecondaryBrush}"
+                       FontSize="12"
+                       Opacity="0.5"
+                       VerticalAlignment="Center"
+                       Margin="8,0,0,0" />
+        </Grid>
+
+        <!-- NexusMods 游戏域名 -->
+        <Grid Grid.Row="8" Margin="0,0,0,12" ColumnDefinitions="100,120,*"
               Name="SettingsNexusDomainRow">
             <TextBlock Text="NexusMods 域名："
                        Foreground="{StaticResource TextSecondaryBrush}"
@@ -136,7 +158,7 @@
         </Grid>
 
         <!-- 清除缓存 -->
-        <StackPanel Grid.Row="8" Orientation="Horizontal" Spacing="15" Margin="0,10,0,0"
+        <StackPanel Grid.Row="9" Orientation="Horizontal" Spacing="15" Margin="0,10,0,0"
                     Name="SettingsCacheRow">
             <Button Name="BtnClearCache"
                     Content="🗑 清除资讯缓存"
@@ -152,7 +174,7 @@
         </StackPanel>
 
         <!-- 提示 -->
-        <TextBlock Grid.Row="9"
+        <TextBlock Grid.Row="10"
                    Text="设置修改后自动保存"
                    Foreground="{StaticResource TextSecondaryBrush}"
                    FontSize="13"

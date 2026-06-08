@@ -4,6 +4,7 @@ using Avalonia.Controls;
 using Avalonia.Input;
 using Avalonia.Media;
 using Avalonia.Threading;
+using ChipLauncher.Models;
 using ChipLauncher.Services;
 
 namespace ChipLauncher.Views;
@@ -67,6 +68,77 @@ public partial class MainWindow : Window
 
         // 标题栏拖拽
         TitleBar.PointerPressed += OnTitleBarPointerPressed;
+    }
+
+    // ===== 窗口级拖放安装模组 =====
+
+    private static readonly HashSet<string> AllowedExtensions = new(StringComparer.OrdinalIgnoreCase)
+    {
+        ".dll", ".zip", ".rar", ".7z", ".tar", ".gz", ".bz2"
+    };
+
+    private void OnWindowDragEnter(object? sender, DragEventArgs e)
+    {
+        if (!HasCompatibleFile(e)) return;
+        e.DragEffects = DragDropEffects.Copy;
+
+        var fileName = GetFileName(e);
+        WindowDropFileName.Text = fileName != null ? $"📄 {fileName}" : "";
+        WindowDropOverlay.IsVisible = true;
+    }
+
+    private void OnWindowDragLeave(object? sender, Avalonia.Interactivity.RoutedEventArgs e)
+    {
+        WindowDropOverlay.IsVisible = false;
+    }
+
+    private async void OnWindowDrop(object? sender, DragEventArgs e)
+    {
+        WindowDropOverlay.IsVisible = false;
+        if (!HasCompatibleFile(e)) return;
+
+        var files = e.Data.GetFiles()?.ToList();
+        if (files == null || files.Count == 0) return;
+
+        // 切换到模组页面（如果尚未在模组页）
+        NavigateTo("Mods", () => new ModsPage());
+
+        // 获取当前 ModsPage 实例并转发文件
+        if (ContentFrame.Content is ModsPage modsPage)
+        {
+            // 等待页面渲染完成
+            await Task.Delay(100);
+            foreach (var file in files)
+            {
+                var localPath = file.Path?.LocalPath;
+                if (localPath != null)
+                    modsPage.InstallFile(localPath);
+            }
+        }
+    }
+
+    /// <summary>检查拖放数据中是否包含兼容的文件</summary>
+    private static bool HasCompatibleFile(DragEventArgs e)
+    {
+        if (!e.Data.Contains(DataFormats.Files)) return false;
+        var files = e.Data.GetFiles();
+        if (files == null) return false;
+
+        return files.Any(f =>
+        {
+            var path = f.Path?.LocalPath;
+            if (path == null) return false;
+            var ext = Path.GetExtension(path);
+            return AllowedExtensions.Contains(ext);
+        });
+    }
+
+    /// <summary>获取拖放文件中的第一个文件名（用于显示）</summary>
+    private static string? GetFileName(DragEventArgs e)
+    {
+        var files = e.Data.GetFiles();
+        var first = files?.FirstOrDefault();
+        return first?.Path?.LocalPath != null ? Path.GetFileName(first.Path.LocalPath) : null;
     }
 
     // ===== Win32 圆角窗口实现 =====

@@ -17,7 +17,6 @@
     <option name="PROJECT_KIND" value="DotNetCore" />
     <option name="PROJECT_TFM" value="net8.0" />
     <method v="2">
-      <option name="CleanSolution" enabled="true" />
       <option name="Build" />
     </method>
   </configuration>

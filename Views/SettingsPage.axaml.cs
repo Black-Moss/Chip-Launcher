@@ -32,8 +32,9 @@ public partial class SettingsPage : UserControl
         SettingsRetryRow.IsVisible = MatchSetting(keyword, "重试次数", "重试", "资讯", "加载");
         SettingsRotationRow.IsVisible = MatchSetting(keyword, "轮播间隔", "轮播", "文本", "游戏文本", "切换");
         SettingsStartupRow.IsVisible = MatchSetting(keyword, "启动页面", "启动", "页面", "默认");
-        SettingsCacheRow.IsVisible = MatchSetting(keyword, "清除缓存", "缓存", "清除", "资讯缓存");
+        SettingsDeleteConfirmRow.IsVisible = MatchSetting(keyword, "删除确认", "删除", "确认", "二次确认", "Delete", "Confirm");
         SettingsNexusDomainRow.IsVisible = MatchSetting(keyword, "NexusMods 域名", "域名", "NexusMods", "domain", "游戏域名");
+        SettingsCacheRow.IsVisible = MatchSetting(keyword, "清除缓存", "缓存", "清除", "资讯缓存");
     }
 
     /// <summary>检查关键词是否匹配任意一个设置项关键词</summary>
@@ -50,8 +51,9 @@ public partial class SettingsPage : UserControl
         SettingsRetryRow.IsVisible = true;
         SettingsRotationRow.IsVisible = true;
         SettingsStartupRow.IsVisible = true;
-        SettingsCacheRow.IsVisible = true;
+        SettingsDeleteConfirmRow.IsVisible = true;
         SettingsNexusDomainRow.IsVisible = true;
+        SettingsCacheRow.IsVisible = true;
     }
 
     /// <summary>清除本地缓存的 Steam 资讯</summary>

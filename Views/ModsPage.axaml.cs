@@ -11,7 +11,7 @@ using ChipLauncher.Services;
 namespace ChipLauncher.Views;
 
 /// <summary>
-///     模组管理页面 — 扫描 BepInEx\plugins 子目录，支持启用/禁用切换和配置编辑
+///     模组管理页面 — 扫描 BepInEx\plugins 子目录，支持启用/禁用切换、配置编辑和拖放安装
 /// </summary>
 public partial class ModsPage : UserControl
 {
@@ -61,6 +61,10 @@ public partial class ModsPage : UserControl
 
     private BepInExConfig? _currentConfig;
 
+    private ModInfo? _selectedMod;
+
+    private ModInstaller? _installer;
+
     // ── 字段 ──────────────────────────────────────────────────
 
     private string? _gameDir;
@@ -72,6 +76,16 @@ public partial class ModsPage : UserControl
         InitializeComponent();
         Loaded += OnPageLoaded;
         ModSearchBox.TextChanged += OnModSearchChanged;
+    }
+
+    private void InitializeInstaller()
+    {
+        _gameDir = GameLocalization.GetGameDirectory();
+        if (string.IsNullOrEmpty(_gameDir)) return;
+
+        var pluginsDir = Path.Combine(_gameDir, "BepInEx", "plugins");
+        if (Directory.Exists(pluginsDir))
+            _installer = new ModInstaller(pluginsDir);
     }
 
     private void OnPageLoaded(object? sender, EventArgs e)
@@ -100,6 +114,8 @@ public partial class ModsPage : UserControl
             return;
         }
 
+        _installer = new ModInstaller(pluginsDir);
+
         try
         {
             var mods = new List<ModInfo>();
@@ -109,9 +125,13 @@ public partial class ModsPage : UserControl
                 var dllFiles = Directory.GetFiles(dir, "*.dll");
                 if (dllFiles.Length > 0)
                 {
+                    var (guid, name, _) = ModInstaller.GetBepInPluginInfo(dllFiles[0]);
+                    if (string.IsNullOrEmpty(guid)) continue; // 无 [BepInPlugin] 不是有效模组
+
                     mods.Add(new ModInfo
                     {
-                        Name = Path.GetFileName(dir),
+                        Name = name ?? Path.GetFileName(dir),
+                        Guid = guid,
                         DirectoryPath = dir,
                         PluginFilePath = dllFiles[0]
                     });
@@ -120,12 +140,21 @@ public partial class ModsPage : UserControl
 
                 var disabledFiles = Directory.GetFiles(dir, "*.disabled");
                 if (disabledFiles.Length > 0)
+                {
+                    var dllPath = disabledFiles[0].Replace(".disabled", "");
+                    if (!File.Exists(dllPath)) continue;
+
+                    var (guid, name, _) = ModInstaller.GetBepInPluginInfo(dllPath);
+                    if (string.IsNullOrEmpty(guid)) continue;
+
                     mods.Add(new ModInfo
                     {
-                        Name = Path.GetFileName(dir),
+                        Name = name ?? Path.GetFileName(dir),
+                        Guid = guid,
                         DirectoryPath = dir,
                         PluginFilePath = disabledFiles[0]
                     });
+                }
             }
 
             mods.Sort((a, b) => string.Compare(a.Name, b.Name, StringComparison.OrdinalIgnoreCase));
@@ -199,6 +228,56 @@ public partial class ModsPage : UserControl
         Process.Start(new ProcessStartInfo(url) { UseShellExecute = true });
     }
 
+    /// <summary>供 MainWindow 拖放调用 — 安装单个文件并刷新列表</summary>
+    public async void InstallFile(string filePath)
+    {
+        await InstallFilesAsync([filePath]);
+    }
+
+    /// <summary>通用安装逻辑（安装 → 刷新 → 显示结果）</summary>
+    private async Task InstallFilesAsync(IEnumerable<string> filePaths)
+    {
+        if (_installer == null)
+        {
+            ShowInstallResult("请先在设置页中配置游戏路径");
+            return;
+        }
+
+        var installed = 0;
+        var failed = 0;
+        var lastMessage = "";
+
+        foreach (var localPath in filePaths)
+        {
+            var (success, message) = await _installer.InstallAsync(localPath);
+            if (success)
+                installed++;
+            else
+                failed++;
+            lastMessage = message;
+        }
+
+        // 刷新模组列表
+        LoadMods();
+
+        if (installed > 0 && failed == 0)
+            ShowInstallResult($"✅ 已成功安装 {installed} 个模组");
+        else if (installed > 0 && failed > 0)
+            ShowInstallResult($"✅ 安装 {installed} 个，{failed} 个失败。原因：{lastMessage}");
+        else
+            ShowInstallResult($"❌ {lastMessage}");
+    }
+
+    /// <summary>在 ErrorHint 显示安装结果，数秒后自动消失</summary>
+    private async void ShowInstallResult(string message)
+    {
+        ErrorHint.Text = message;
+        ErrorHint.IsVisible = true;
+
+        await Task.Delay(3000);
+        ErrorHint.IsVisible = false;
+    }
+
     /// <summary>切换模组启用/禁用</summary>
     private async void OnToggleClick(object? sender, RoutedEventArgs e)
     {
@@ -250,43 +329,69 @@ public partial class ModsPage : UserControl
     {
         if (e.AddedItems.Count == 0 || e.AddedItems[0] is not ModInfo mod)
         {
+            _selectedMod = null;
             ClearConfigPanel();
             return;
         }
 
+        _selectedMod = mod;
         LoadConfigForMod(mod);
     }
 
-    /// <summary>加载选中模组的 BepInEx 配置</summary>
+    /// <summary>加载选中模组的 BepInEx 配置（根据 GUID 匹配 {BepInEx/config}/{GUID}.cfg）</summary>
     private void LoadConfigForMod(ModInfo mod)
     {
-        var cfgDir = Path.Combine(mod.DirectoryPath, "config");
-        if (!Directory.Exists(cfgDir))
+        _gameDir = GameLocalization.GetGameDirectory();
+        if (string.IsNullOrEmpty(_gameDir))
         {
-            ShowConfigUnavailable("此模组没有配置文件。");
+            ShowConfigUnavailable("未找到游戏目录。");
             return;
         }
 
-        var cfgFiles = Directory.GetFiles(cfgDir, "*.cfg");
-        if (cfgFiles.Length == 0)
+        var configDir = Path.Combine(_gameDir, "BepInEx", "config");
+
+        // 优先按 GUID 查找配置文件
+        if (!string.IsNullOrEmpty(mod.Guid))
         {
-            ShowConfigUnavailable("此模组没有配置文件。");
-            return;
+            var cfgPath = Path.Combine(configDir, mod.Guid + ".cfg");
+            if (File.Exists(cfgPath))
+            {
+                var cfg = BepInExConfig.Load(cfgPath);
+                if (cfg != null)
+                {
+                    _currentConfig = cfg;
+                    ConfigFileName.Text = cfg.FileName;
+                    ConfigDescription.Text = cfg.ModDescription;
+                    ConfigItemsControl.ItemsSource = cfg.Entries;
+                    ConfigPanel.IsVisible = true;
+                    NoSelectionHint.IsVisible = false;
+                    return;
+                }
+            }
         }
 
-        var cfg = BepInExConfig.Load(cfgFiles[0]);
-        if (cfg == null)
+        // 降级：在模组目录下查找 config/ 子目录（旧版兼容）
+        var legacyCfgDir = Path.Combine(mod.DirectoryPath, "config");
+        if (Directory.Exists(legacyCfgDir))
         {
-            ShowConfigUnavailable("无法解析配置文件。");
-            return;
+            var cfgFiles = Directory.GetFiles(legacyCfgDir, "*.cfg");
+            if (cfgFiles.Length > 0)
+            {
+                var cfg = BepInExConfig.Load(cfgFiles[0]);
+                if (cfg != null)
+                {
+                    _currentConfig = cfg;
+                    ConfigFileName.Text = cfg.FileName;
+                    ConfigDescription.Text = cfg.ModDescription;
+                    ConfigItemsControl.ItemsSource = cfg.Entries;
+                    ConfigPanel.IsVisible = true;
+                    NoSelectionHint.IsVisible = false;
+                    return;
+                }
+            }
         }
 
-        _currentConfig = cfg;
-        ConfigFileName.Text = cfg.FileName;
-        ConfigDescription.Text = cfg.ModDescription;
-        ConfigItemsControl.ItemsSource = cfg.Entries;
-        ConfigPanel.IsVisible = true;
-        NoSelectionHint.IsVisible = false;
+        ShowConfigUnavailable("此模组没有配置文件。");
     }
 
     private void ShowConfigPanel(BepInExConfig config)
@@ -312,6 +417,66 @@ public partial class ModsPage : UserControl
         ConfigPanel.IsVisible = false;
         NoSelectionHint.IsVisible = true;
         _currentConfig = null;
+        DeleteConfirmPanel.IsVisible = false;
+    }
+
+    // ── 删除模组 ──────────────────────────────────────────────
+
+    private void OnDeleteClick(object? sender, RoutedEventArgs e)
+    {
+        if (_selectedMod == null) return;
+
+        if (AppConfig.Instance.ConfirmModDeletion)
+        {
+            DeleteConfirmText.Text = $"确定要删除「{_selectedMod.Name}」吗？\n此操作将删除整个模组目录，不可恢复。";
+            DeleteConfirmPanel.IsVisible = true;
+        }
+        else
+        {
+            DeleteModAndRefresh(_selectedMod);
+        }
+    }
+
+    private async void OnConfirmDeleteClick(object? sender, RoutedEventArgs e)
+    {
+        DeleteConfirmPanel.IsVisible = false;
+
+        if (_selectedMod == null) return;
+
+        var modName = _selectedMod.Name;
+        await Task.Run(() => DeleteMod(_selectedMod!));
+
+        ClearConfigPanel();
+        LoadMods();
+        ShowInstallResult($"✅ 已删除模组「{modName}」");
+    }
+
+    private void OnCancelDeleteClick(object? sender, RoutedEventArgs e)
+    {
+        DeleteConfirmPanel.IsVisible = false;
+    }
+
+    /// <summary>删除模组目录（递归）并刷新列表</summary>
+    private void DeleteModAndRefresh(ModInfo mod)
+    {
+        DeleteMod(mod);
+        ClearConfigPanel();
+        LoadMods();
+        ShowInstallResult($"✅ 已删除模组「{mod.Name}」");
+    }
+
+    /// <summary>删除模组目录（递归）</summary>
+    private static void DeleteMod(ModInfo mod)
+    {
+        try
+        {
+            if (Directory.Exists(mod.DirectoryPath))
+                Directory.Delete(mod.DirectoryPath, true);
+        }
+        catch (Exception ex)
+        {
+            Logger.Error($"删除模组失败: {mod.Name}", ex);
+        }
     }
 
     private async void OnSaveConfigClick(object? sender, RoutedEventArgs e)

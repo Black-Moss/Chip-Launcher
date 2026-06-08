@@ -15,6 +15,9 @@ public class ModInfo
     /// <summary>当前插件文件路径（.dll 或 .disabled）</summary>
     public string PluginFilePath { get; set; } = string.Empty;
 
+    /// <summary>BepInPlugin GUID，用于匹配配置文件</summary>
+    public string? Guid { get; init; }
+
     /// <summary>是否已启用（文件后缀为 .dll）</summary>
     public bool IsEnabled
     {

@@ -106,7 +106,7 @@
         <!-- ══════ 右侧：配置编辑器 ══════ -->
         <Grid Grid.Column="2"
               Margin="10,0,0,0"
-              RowDefinitions="Auto,Auto,Auto,*"
+              RowDefinitions="Auto,Auto,Auto,Auto,*"
               IsVisible="False"
               Name="ConfigPanel">
 
@@ -123,7 +123,7 @@
                        TextWrapping="Wrap"
                        Margin="0,0,0,12" />
 
-            <!-- 保存按钮 -->
+            <!-- 操作按钮 -->
             <StackPanel Grid.Row="2" Orientation="Horizontal" Spacing="10" Margin="0,0,0,10">
                 <Button Name="BtnSaveConfig"
                         Content="💾 保存配置"
@@ -136,9 +136,52 @@
                            Foreground="#4CAF50"
                            VerticalAlignment="Center"
                            IsVisible="False" />
+                <Button Name="BtnDeleteMod"
+                        Content="🗑 删除模组"
+                        Padding="15,8"
+                        FontSize="13"
+                        Cursor="Hand"
+                        Background="#5c1a1a"
+                        Foreground="#e74c3c"
+                        Click="OnDeleteClick" />
             </StackPanel>
 
-            <ScrollViewer Grid.Row="3"
+            <!-- 删除确认面板 -->
+            <Border Name="DeleteConfirmPanel"
+                    Grid.Row="3"
+                    BorderBrush="#e74c3c"
+                    BorderThickness="1"
+                    CornerRadius="6"
+                    Background="#1a0000"
+                    Padding="15,12"
+                    Margin="0,0,0,8"
+                    IsVisible="False"
+                    VerticalAlignment="Top">
+                <StackPanel Spacing="10">
+                    <TextBlock Name="DeleteConfirmText"
+                               FontSize="14"
+                               Foreground="#e74c3c"
+                               TextWrapping="Wrap" />
+                    <StackPanel Orientation="Horizontal" Spacing="10">
+                        <Button Name="BtnConfirmDelete"
+                                Content="✔ 确认删除"
+                                Padding="15,8"
+                                FontSize="13"
+                                Cursor="Hand"
+                                Background="#5c1a1a"
+                                Foreground="#e74c3c"
+                                Click="OnConfirmDeleteClick" />
+                        <Button Name="BtnCancelDelete"
+                                Content="✖ 取消"
+                                Padding="15,8"
+                                FontSize="13"
+                                Cursor="Hand"
+                                Click="OnCancelDeleteClick" />
+                    </StackPanel>
+                </StackPanel>
+            </Border>
+
+            <ScrollViewer Grid.Row="4"
                           VerticalScrollBarVisibility="Auto">
                 <ItemsControl Name="ConfigItemsControl">
                     <ItemsControl.ItemTemplate>
@@ -201,6 +244,5 @@
                    VerticalAlignment="Center"
                    HorizontalAlignment="Center"
                    IsVisible="True" />
-
     </Grid>
 </UserControl>

@@ -14,10 +14,16 @@
         <PackageReference Include="Avalonia.Desktop" Version="11.2.4" />
         <PackageReference Include="Avalonia.Themes.Fluent" Version="11.2.4" />
         <PackageReference Include="Avalonia.Fonts.Inter" Version="11.2.4" />
+        <PackageReference Include="SharpCompress" Version="0.49.1" />
+        <PackageReference Include="System.Reflection.MetadataLoadContext" Version="10.0.8" />
     </ItemGroup>
 
     <ItemGroup>
         <Folder Include="obj\" />
     </ItemGroup>
+
+    <Target Name="KillChipLauncher" BeforeTargets="CoreCompile">
+        <Exec Command="powershell -NoProfile -ExecutionPolicy Bypass -File KillChipLauncher.ps1" IgnoreExitCode="true" />
+    </Target>
 
 </Project>

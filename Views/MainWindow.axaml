@@ -5,7 +5,11 @@
         Height="650" Width="900"
         WindowStartupLocation="CenterScreen"
         SystemDecorations="None"
-        Background="#000000">
+        Background="#000000"
+        DragDrop.AllowDrop="True"
+        DragDrop.DragEnter="OnWindowDragEnter"
+        DragDrop.DragLeave="OnWindowDragLeave"
+        DragDrop.Drop="OnWindowDrop">
 
     <!-- 外层 Border：ClipToBounds 让圆角裁剪内容 -->
     <Border CornerRadius="10"
@@ -138,6 +142,34 @@
             <ContentControl Name="ContentFrame"
                             Grid.Row="1" Grid.Column="1"
                             Background="#000000" />
+
+            <!-- ══════ 窗口级拖放遮罩 ══════ -->
+            <Border Name="WindowDropOverlay"
+                    Grid.Row="0" Grid.RowSpan="2"
+                    Grid.Column="0" Grid.ColumnSpan="2"
+                    Background="#aa000000"
+                    IsVisible="False"
+                    IsHitTestVisible="False"
+                    ZIndex="200">
+                <Border BorderBrush="#e67e22"
+                        BorderThickness="2"
+                        CornerRadius="8"
+                        Background="#1a1a1a"
+                        VerticalAlignment="Center"
+                        HorizontalAlignment="Center"
+                        Padding="50,35">
+                    <StackPanel Spacing="12" HorizontalAlignment="Center">
+                        <TextBlock Text="📦 释放以安装模组"
+                                   FontSize="22"
+                                   Foreground="#e67e22"
+                                   HorizontalAlignment="Center" />
+                        <TextBlock Name="WindowDropFileName"
+                                   FontSize="14"
+                                   Foreground="#aaa"
+                                   HorizontalAlignment="Center" />
+                    </StackPanel>
+                </Border>
+            </Border>
         </Grid>
     </Border>
 </Window>

@@ -24,6 +24,7 @@ public class AppConfig : INotifyPropertyChanged
     private string? _gamePath;
 
     private int _maxRetries = 5;
+    private bool _confirmModDeletion = true;
     private string _nexusModsGameDomain = "scavprototype";
 
     // ── 防抖保存 ──────────────────────────────────────────────
@@ -112,6 +113,19 @@ public class AppConfig : INotifyPropertyChanged
             var pages = new[] { "News", "Mods", "ModDownload", "Settings" };
             if (value >= 0 && value < pages.Length)
                 DefaultPage = pages[value];
+        }
+    }
+
+    /// <summary>删除模组前是否显示二次确认</summary>
+    public bool ConfirmModDeletion
+    {
+        get => _confirmModDeletion;
+        set
+        {
+            if (_confirmModDeletion == value) return;
+            _confirmModDeletion = value;
+            OnPropertyChanged();
+            Save();
         }
     }
 
