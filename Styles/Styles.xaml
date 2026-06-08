@@ -3,12 +3,12 @@
 
     <!-- 纯黑主题色 -->
     <Color x:Key="PrimaryColor">#000000</Color>
-    <Color x:Key="SecondaryColor">#0a0a0a</Color>
-    <Color x:Key="AccentColor">#1a1a1a</Color>
-    <Color x:Key="HoverColor">#2a2a2a</Color>
+    <Color x:Key="SecondaryColor">#000000</Color>
+    <Color x:Key="AccentColor">#000000</Color>
+    <Color x:Key="HoverColor">#000000</Color>
     <Color x:Key="TextPrimaryColor">#FFFFFF</Color>
-    <Color x:Key="TextSecondaryColor">#999999</Color>
-    <Color x:Key="BorderColor">#222222</Color>
+    <Color x:Key="TextSecondaryColor">#FFFFFF</Color>
+    <Color x:Key="BorderColor">#FFFFFF</Color>
 
     <!-- 背景画刷 -->
     <SolidColorBrush x:Key="BackgroundBrush" Color="{StaticResource PrimaryColor}"/>

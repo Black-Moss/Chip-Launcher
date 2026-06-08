@@ -1,22 +1,58 @@
+using System.ComponentModel;
 using System.IO;
+using System.Runtime.CompilerServices;
 using System.Text.Json;
 
 namespace ChipLauncher.Services;
 
 /// <summary>
-/// 应用配置管理（JSON 文件存储）
+/// 应用配置管理（JSON 文件存储）— 单例 + 自动保存
 /// </summary>
-public class AppConfig
+public class AppConfig : INotifyPropertyChanged
 {
     private static readonly string ConfigPath =
         Path.Combine(
             AppDomain.CurrentDomain.BaseDirectory,
             "config.json");
 
-    public string? GamePath { get; set; }
+    /// <summary>全局唯一实例，首次访问时自动从文件加载</summary>
+    public static AppConfig Instance { get; } = Load();
 
-    /// <summary>加载配置，不存在则返回默认值</summary>
-    public static AppConfig Load()
+    // ── 属性 ──────────────────────────────────────────────────
+
+    private string? _gamePath;
+    public string? GamePath
+    {
+        get => _gamePath;
+        set
+        {
+            if (_gamePath == value) return;
+            _gamePath = value;
+            OnPropertyChanged();
+            Save(); // 变更后自动保存
+        }
+    }
+
+    private int _maxRetries = 5;
+    /// <summary>资讯获取失败时的最大重试次数（默认 5）</summary>
+    public int MaxRetries
+    {
+        get => _maxRetries;
+        set
+        {
+            if (_maxRetries == value) return;
+            _maxRetries = Math.Clamp(value, 1, 20);
+            OnPropertyChanged();
+            Save();
+        }
+    }
+
+    // ── 私有构造（防止外部 new，只能通过 Load 创建） ──────────
+    [System.Text.Json.Serialization.JsonConstructor]
+    private AppConfig() { }
+
+    /// <summary>从 JSON 文件加载，不存在则返回默认值</summary>
+    private static AppConfig Load()
     {
         try
         {
@@ -37,8 +73,8 @@ public class AppConfig
         return new AppConfig();
     }
 
-    /// <summary>保存配置到 JSON 文件</summary>
-    public void Save()
+    /// <summary>保存到 JSON 文件</summary>
+    private void Save()
     {
         try
         {
@@ -54,5 +90,13 @@ public class AppConfig
         {
             Logger.Error("保存配置文件失败", ex);
         }
+    }
+
+    // ── INotifyPropertyChanged ────────────────────────────────
+    public event PropertyChangedEventHandler? PropertyChanged;
+
+    private void OnPropertyChanged([CallerMemberName] string? name = null)
+    {
+        PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(name));
     }
 }

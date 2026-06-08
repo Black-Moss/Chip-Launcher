@@ -6,22 +6,13 @@ using Microsoft.Win32;
 namespace ChipLauncher.Views;
 
 /// <summary>
-/// 设置页面
+/// 设置页面 — 绑定到 AppConfig.Instance，修改自动保存
 /// </summary>
 public partial class SettingsPage : UserControl
 {
-    private readonly AppConfig _config;
-
     public SettingsPage()
     {
         InitializeComponent();
-        _config = AppConfig.Load();
-        LoadSettings();
-    }
-
-    private void LoadSettings()
-    {
-        GamePathBox.Text = _config.GamePath ?? string.Empty;
     }
 
     private void OnBrowseClick(object sender, RoutedEventArgs e)
@@ -33,15 +24,6 @@ public partial class SettingsPage : UserControl
         };
 
         if (dialog.ShowDialog() == true)
-            GamePathBox.Text = dialog.FileName;
-    }
-
-    private void OnSaveClick(object sender, RoutedEventArgs e)
-    {
-        _config.GamePath = GamePathBox.Text;
-        _config.Save();
-
-        MessageBox.Show("设置已保存！", "Chip Launcher",
-            MessageBoxButton.OK, MessageBoxImage.Information);
+            AppConfig.Instance.GamePath = dialog.FileName;
     }
 }

@@ -1,18 +1,18 @@
 using System.Collections.Concurrent;
 using System.Net;
 using System.Net.Http;
+using System.Security.Authentication;
 using System.Xml.Linq;
 using ChipLauncher.Models;
 
 namespace ChipLauncher.Services;
 
 /// <summary>
-/// 从 Steam 新闻 RSS 获取游戏资讯（支持内存缓存 + 自动重试）
+/// 从 Steam 新闻 RSS 获取游戏资讯（支持内存缓存）
 /// </summary>
 public class NewsService : INewsService
 {
     private readonly HttpClient _httpClient;
-    private const int MaxRetries = 3;
 
     // ── 内存缓存 ──────────────────────────────────────────────
     private static readonly ConcurrentDictionary<string, CacheEntry> Cache = new();
@@ -29,25 +29,33 @@ public class NewsService : INewsService
     {
         // 全局 SSL / 连接优化
         ServicePointManager.Expect100Continue = false;
-        ServicePointManager.SecurityProtocol =
-            SecurityProtocolType.Tls | SecurityProtocolType.Tls11 |
-            SecurityProtocolType.Tls12 | SecurityProtocolType.Tls13;
+        ServicePointManager.SecurityProtocol = SecurityProtocolType.Tls12;
         ServicePointManager.ServerCertificateValidationCallback =
             (_, _, _, _) => true;
 
-        var handler = new HttpClientHandler
+        var handler = new SocketsHttpHandler
         {
-            // 允许所有证书（解决部分 Windows 环境 SSL 问题）
-            ServerCertificateCustomValidationCallback =
-                (_, _, _, _) => true,
+            // 仅使用 TLS 1.2（Steam CDN 对 TLS 1.3 兼容性不稳定）
+            SslOptions =
+            {
+                EnabledSslProtocols = SslProtocols.Tls12,
+                RemoteCertificateValidationCallback = (_, _, _, _) => true,
+            },
             AllowAutoRedirect = true,
             MaxAutomaticRedirections = 10,
             AutomaticDecompression = DecompressionMethods.GZip | DecompressionMethods.Deflate,
+            // 连接池优化
+            PooledConnectionLifetime = TimeSpan.FromMinutes(5),
+            PooledConnectionIdleTimeout = TimeSpan.FromMinutes(2),
+            MaxConnectionsPerServer = 5,
         };
 
         _httpClient = new HttpClient(handler)
         {
             Timeout = TimeSpan.FromSeconds(30),
+            // 强制 HTTP/1.1
+            DefaultRequestVersion = HttpVersion.Version11,
+            DefaultVersionPolicy = HttpVersionPolicy.RequestVersionExact,
         };
 
         _httpClient.DefaultRequestHeaders.UserAgent.ParseAdd(
@@ -59,7 +67,15 @@ public class NewsService : INewsService
         _httpClient.DefaultRequestHeaders.Add("Cache-Control", "no-cache");
     }
 
-    public async Task<List<NewsItem>> GetNewsAsync(string appId)
+    /// <summary>检查缓存中是否有有效的资讯数据（不发起 HTTP 请求）</summary>
+    public static List<NewsItem>? TryGetCached(string appId)
+    {
+        if (Cache.TryGetValue(appId, out var cached) && cached.IsValid)
+            return cached.Items;
+        return null;
+    }
+
+    public async Task<List<NewsItem>?> GetNewsAsync(string appId)
     {
         // 1. 检查缓存是否有效
         if (Cache.TryGetValue(appId, out var cached) && cached.IsValid)
@@ -68,45 +84,35 @@ public class NewsService : INewsService
             return cached.Items;
         }
 
-        // 2. 缓存失效 → 发起 HTTP 请求
+        // 2. 缓存失效 → 发起一次 HTTP 请求（失败不自动重试）
         var url = $"https://store.steampowered.com/feeds/news/app/{appId}/";
 
-        for (var attempt = 1; attempt <= MaxRetries; attempt++)
+        try
         {
-            try
-            {
-                Logger.Info($"正在获取 Steam 资讯: AppId={appId} (第 {attempt} 次尝试)");
-                var xml = await _httpClient.GetStringAsync(url);
-                var items = ParseSteamRss(xml);
+            Logger.Info($"正在获取 Steam 资讯: AppId={appId}");
+            var xml = await _httpClient.GetStringAsync(url);
+            var items = ParseSteamRss(xml);
 
-                // 更新缓存
-                Cache[appId] = new CacheEntry { Items = items };
-                Logger.Info($"获取资讯成功: {items.Count} 条 (已缓存 {CacheDuration.TotalMinutes} 分钟)");
-                return items;
-            }
-            catch (HttpRequestException ex) when (attempt < MaxRetries)
-            {
-                Logger.Warn($"第 {attempt} 次请求失败，即将重试: {ex.Message}");
-                await Task.Delay(TimeSpan.FromSeconds(attempt * 2));
-            }
-            catch (HttpRequestException ex)
-            {
-                Logger.Error($"网络请求失败（已重试 {MaxRetries} 次）: {url}", ex);
-                return new List<NewsItem>();
-            }
-            catch (TaskCanceledException)
-            {
-                Logger.Warn("请求超时");
-                if (attempt >= MaxRetries) return new List<NewsItem>();
-            }
-            catch (Exception ex)
-            {
-                Logger.Error($"解析资讯失败: {ex.Message}", ex);
-                return new List<NewsItem>();
-            }
+            // 更新缓存
+            Cache[appId] = new CacheEntry { Items = items };
+            Logger.Info($"获取资讯成功: {items.Count} 条 (已缓存 {CacheDuration.TotalMinutes} 分钟)");
+            return items;
         }
-
-        return new List<NewsItem>();
+        catch (HttpRequestException ex)
+        {
+            Logger.Error($"网络请求失败: {url}", ex);
+            return null;
+        }
+        catch (TaskCanceledException)
+        {
+            Logger.Warn("请求超时");
+            return null;
+        }
+        catch (Exception ex)
+        {
+            Logger.Error($"解析资讯失败: {ex.Message}", ex);
+            return null;
+        }
     }
 
     /// <summary>
@@ -140,10 +146,18 @@ public class NewsService : INewsService
         if (string.IsNullOrEmpty(html))
             return string.Empty;
 
+        // 先换行标签 → 换行符
         var text = System.Text.RegularExpressions.Regex
-            .Replace(html, "<[^>]*>", " ");
+            .Replace(html, @"</?(?:br|p|div|li|h[1-6])(?:\s[^>]*)?>", "\n");
+        // 去掉剩余 HTML 标签
         text = System.Text.RegularExpressions.Regex
-            .Replace(text, @"\s+", " ");
+            .Replace(text, "<[^>]*>", " ");
+        // 压缩空白（保留换行）
+        text = System.Text.RegularExpressions.Regex
+            .Replace(text, @"[^\S\n]+", " ");
+        // 合并连续空行
+        text = System.Text.RegularExpressions.Regex
+            .Replace(text, @"\n{3,}", "\n\n");
         return text.Trim();
     }
 

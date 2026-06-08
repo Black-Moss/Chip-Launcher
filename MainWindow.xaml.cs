@@ -10,15 +10,16 @@ namespace ChipLauncher;
 public partial class MainWindow
 {
     private readonly IGameService _gameService;
-    private readonly AppConfig _config;
 
     public MainWindow()
     {
         InitializeComponent();
         Logger.Info("Chip Launcher 启动");
 
-        _config = AppConfig.Load();
         _gameService = new GameService();
+
+        // 启动时后台预取资讯（失败也不阻塞，用户可在资讯页手动重试）
+        _ = PrefetchNewsAsync();
 
         BtnPlay.Click += (_, _) => LaunchGame();
         BtnMods.Click += (_, _) =>
@@ -41,12 +42,24 @@ public partial class MainWindow
         ContentFrame.Navigate(new NewsPage());
     }
 
+    /// <summary>启动时后台预取资讯，结果缓存到 NewsService 中</summary>
+    private static async Task PrefetchNewsAsync()
+    {
+        var newsService = new NewsService();
+        var result = await newsService.GetNewsAsync("4576490");
+        if (result != null)
+            Logger.Info($"启动预取资讯成功: {result.Count} 条");
+        else
+            Logger.Warn("启动预取资讯失败，用户可在资讯页手动重试");
+    }
+
     private void LaunchGame()
     {
-        if (!string.IsNullOrEmpty(_config.GamePath))
+        var config = AppConfig.Instance;
+        if (!string.IsNullOrEmpty(config.GamePath))
         {
-            Logger.Info($"启动游戏（本地路径）: {_config.GamePath}");
-            _gameService.LaunchDirectly(_config.GamePath);
+            Logger.Info($"启动游戏（本地路径）: {config.GamePath}");
+            _gameService.LaunchDirectly(config.GamePath);
         }
         else
         {

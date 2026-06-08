@@ -7,11 +7,6 @@
             <RowDefinition Height="*"/>
         </Grid.RowDefinitions>
 
-        <TextBlock Text="模组管理"
-                   FontSize="20"
-                   Foreground="White"
-                   Margin="0,0,0,15"/>
-
         <TextBlock Grid.Row="1"
                    Text="模组管理功能开发中…"
                    FontSize="14"
