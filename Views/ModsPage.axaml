@@ -2,7 +2,7 @@
              xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
              xmlns:local="using:ChipLauncher.Views"
              x:Class="ChipLauncher.Views.ModsPage">
-    <Grid Margin="15" ColumnDefinitions="300,5,*" RowDefinitions="Auto,Auto,Auto,Auto,*">
+    <Grid Margin="15" ColumnDefinitions="300,5,*">
 
         <!-- ══════ 左侧：模组列表 ══════ -->
         <Grid RowDefinitions="Auto,Auto,Auto,Auto,*">
@@ -23,26 +23,28 @@
                      BorderThickness="1"
                      KeyDown="OnModSearchKeyDown" />
 
-            <!-- 工具按钮：安装本地模组 / 打开模组文件夹 / 打开配置文件夹 -->
+            <!-- 工具按钮行：安装 + 排序 -->
             <StackPanel Grid.Row="2" Orientation="Horizontal" Spacing="6" Margin="0,0,0,6" HorizontalAlignment="Center">
-                <Button Name="BtnInstallLocal"
+                <Button Classes="Flat" Name="BtnInstallLocal"
                         Content="安装本地模组"
                         Padding="10,5"
                         FontSize="11"
-                        Cursor="Hand"
                         Click="OnInstallLocalClick" />
-                <Button Name="BtnOpenModFolder"
+                <Button Classes="Flat" Name="BtnOpenModFolder"
                         Content="模组文件夹"
                         Padding="10,5"
                         FontSize="11"
-                        Cursor="Hand"
                         Click="OnOpenModFolderClick" />
-                <Button Name="BtnOpenConfigFolder"
+                <Button Classes="Flat" Name="BtnOpenConfigFolder"
                         Content="配置文件夹"
                         Padding="10,5"
                         FontSize="11"
-                        Cursor="Hand"
                         Click="OnOpenConfigFolderClick" />
+                <Button Classes="Flat" Name="BtnSortOrder"
+                        Content="A-Z ▾"
+                        Padding="8,5"
+                        FontSize="11"
+                        Click="OnSortOrderClick" />
             </StackPanel>
 
             <!-- 模组统计 + 批量操作工具栏 -->
@@ -54,26 +56,31 @@
                             Orientation="Horizontal"
                             Spacing="6"
                             IsVisible="False">
-                    <Button Name="BtnBatchEnable"
+                    <Button Classes="Flat" Name="BtnBatchSelectAll"
+                            Content="全选"
+                            Padding="8,4"
+                            FontSize="11"
+                            Click="OnBatchSelectAllClick" />
+                    <Button Classes="Flat" Name="BtnBatchEnable"
                             Content="启用选中"
                             Padding="8,4"
                             FontSize="11"
-                            Cursor="Hand"
                             Click="OnBatchEnableClick" />
-                    <Button Name="BtnBatchDisable"
+                    <Button Classes="Flat" Name="BtnBatchDisable"
                             Content="禁用选中"
                             Padding="8,4"
                             FontSize="11"
-                            Cursor="Hand"
                             Click="OnBatchDisableClick" />
-                    <Button Name="BtnBatchDelete"
-                            Content="🗑 删除选中"
+                    <Button Classes="Flat" Name="BtnBatchDelete"
+                            Content="删除选中"
                             Padding="8,4"
                             FontSize="11"
-                            Cursor="Hand"
-                            Background="#5c1a1a"
-                            Foreground="#e74c3c"
                             Click="OnBatchDeleteClick" />
+                    <Button Classes="Flat" Name="BtnBatchInvert"
+                            Content="反选"
+                            Padding="8,4"
+                            FontSize="11"
+                            Click="OnBatchInvertClick" />
                 </StackPanel>
             </StackPanel>
 
@@ -83,24 +90,32 @@
                      BorderThickness="0"
                      ScrollViewer.HorizontalScrollBarVisibility="Disabled"
                      ScrollViewer.VerticalScrollBarVisibility="Auto"
-                     SelectionMode="Multiple"
-                     SelectionChanged="OnModSelected">
+                     SelectionChanged="OnModSelected"
+                     PointerPressed="OnModListPointerPressed">
                 <ListBox.ItemTemplate>
                     <DataTemplate>
-                        <Border Padding="10,8"
+                        <Border Padding="6,8"
                                 Margin="0,0,0,3"
                                 BorderBrush="{StaticResource BorderBrush}"
                                 BorderThickness="0,0,0,1">
-                            <Grid ColumnDefinitions="Auto,*,Auto,Auto">
+                            <Grid ColumnDefinitions="Auto,Auto,*,Auto,Auto">
+
+                                <!-- 选择复选框（双向绑定到 ModInfo.IsChecked） -->
+                                <CheckBox Tag="{Binding}"
+                                          IsChecked="{Binding IsChecked}"
+                                          IsHitTestVisible="True"
+                                          VerticalAlignment="Center"
+                                          Margin="0,0,4,0"
+                                          Click="OnModCheckBoxClick" />
 
                                 <!-- 状态圆点 -->
-                                <Ellipse Width="8" Height="8"
+                                <Ellipse Grid.Column="1" Width="8" Height="8"
                                          Fill="{Binding IsEnabled, Converter={x:Static local:ModsPage.ColorConverter}}"
                                          VerticalAlignment="Center"
                                          Margin="0,0,8,0" />
 
                                 <!-- 模组名 -->
-                                <TextBlock Grid.Column="1"
+                                <TextBlock Grid.Column="2"
                                            Text="{Binding Name}"
                                            FontSize="14"
                                            Foreground="{StaticResource TextPrimaryBrush}"
@@ -109,20 +124,21 @@
                                            TextTrimming="CharacterEllipsis" />
 
                                 <!-- 状态文本 -->
-                                <TextBlock Grid.Column="2"
+                                <TextBlock Grid.Column="3"
                                            Text="{Binding IsEnabled, Converter={x:Static local:ModsPage.StatusTextConverter}}"
                                            FontSize="11"
                                            Foreground="#888"
                                            VerticalAlignment="Center"
                                            Margin="0,0,8,0" />
 
-                                <!-- 切换按钮 -->
-                                <Button Grid.Column="3"
+                                <!-- 切换按钮（背景色随状态变化） -->
+                                <Button Classes="Flat"
+                                        Grid.Column="4"
                                         Content="{Binding IsEnabled, Converter={x:Static local:ModsPage.ToggleTextConverter}}"
+                                        Background="{Binding IsEnabled, Converter={x:Static local:ModsPage.ToggleColorConverter}}"
                                         Padding="8,4"
                                         FontSize="11"
                                         MinWidth="48"
-                                        Cursor="Hand"
                                         Tag="{Binding}"
                                         Click="OnToggleClick"
                                         HorizontalAlignment="Right" />
@@ -162,39 +178,52 @@
         <!-- ══════ 右侧：配置编辑器 ══════ -->
         <Grid Grid.Column="2"
               Margin="10,0,0,0"
-              RowDefinitions="Auto,Auto,Auto,Auto,*"
+              RowDefinitions="Auto,Auto,Auto,Auto,Auto,*"
               IsVisible="False"
               Name="ConfigPanel">
 
-            <TextBlock Name="ConfigFileName"
+            <!-- 模组名（始终显示） -->
+            <TextBlock Name="ConfigModName"
                        FontSize="16"
                        FontWeight="Bold"
                        Foreground="{StaticResource TextPrimaryBrush}"
                        Margin="0,0,0,4" />
 
+            <!-- 配置文件名（有配置才显示） -->
+            <TextBlock Name="ConfigFileName"
+                       Grid.Row="1"
+                       FontSize="12"
+                       Foreground="#888"
+                       TextWrapping="Wrap"
+                       Margin="0,0,0,12"
+                       IsVisible="False" />
+
+            <!-- 配置不可用时的提示 -->
             <TextBlock Name="ConfigDescription"
                        Grid.Row="1"
                        FontSize="12"
                        Foreground="#888"
                        TextWrapping="Wrap"
-                       Margin="0,0,0,12" />
+                       Margin="0,0,0,12"
+                       IsVisible="False" />
 
             <!-- 操作按钮 -->
             <StackPanel Grid.Row="2" Orientation="Horizontal" Spacing="10" Margin="0,0,0,10">
-                <Button Name="BtnSaveConfig"
-                        Content="💾 保存配置"
+                <Button Classes="Flat" Name="BtnDeleteMod"
+                        Content="删除模组"
                         Padding="15,8"
                         FontSize="13"
-                        Cursor="Hand"
-                        Click="OnSaveConfigClick" />
-                <Button Name="BtnDeleteMod"
-                        Content="🗑 删除模组"
-                        Padding="15,8"
-                        FontSize="13"
-                        Cursor="Hand"
-                        Background="#5c1a1a"
-                        Foreground="#e74c3c"
                         Click="OnDeleteClick" />
+                <Button Classes="Flat" Name="BtnSaveConfig"
+                        Content="保存配置"
+                        Padding="15,8"
+                        FontSize="13"
+                        Click="OnSaveConfigClick" />
+                <Button Classes="Flat" Name="BtnOpenConfig"
+                        Content="打开配置"
+                        Padding="15,8"
+                        FontSize="13"
+                        Click="OnOpenConfigClick" />
             </StackPanel>
 
             <!-- 删除确认面板 -->
@@ -214,25 +243,21 @@
                                Foreground="#e74c3c"
                                TextWrapping="Wrap" />
                     <StackPanel Orientation="Horizontal" Spacing="10">
-                        <Button Name="BtnConfirmDelete"
+                        <Button Classes="Flat" Name="BtnConfirmDelete"
                                 Content="✔ 确认删除"
                                 Padding="15,8"
                                 FontSize="13"
-                                Cursor="Hand"
-                                Background="#5c1a1a"
-                                Foreground="#e74c3c"
                                 Click="OnConfirmDeleteClick" />
-                        <Button Name="BtnCancelDelete"
+                        <Button Classes="Flat" Name="BtnCancelDelete"
                                 Content="✖ 取消"
                                 Padding="15,8"
                                 FontSize="13"
-                                Cursor="Hand"
                                 Click="OnCancelDeleteClick" />
                     </StackPanel>
                 </StackPanel>
             </Border>
 
-            <ScrollViewer Grid.Row="4"
+            <ScrollViewer Grid.Row="5"
                           VerticalScrollBarVisibility="Auto">
                 <ItemsControl Name="ConfigItemsControl">
                     <ItemsControl.ItemTemplate>
@@ -295,5 +320,34 @@
                    VerticalAlignment="Center"
                    HorizontalAlignment="Center"
                    IsVisible="True" />
+
+        <!-- ══════ 安装中加载遮罩 ══════ -->
+        <Border Name="InstallOverlay"
+                Grid.ColumnSpan="3"
+                Background="#88000000"
+                IsVisible="False"
+                ZIndex="100">
+            <Border Background="#2a2a2a"
+                    BorderBrush="{StaticResource BorderBrush}"
+                    BorderThickness="1"
+                    CornerRadius="8"
+                    Padding="40,30"
+                    Width="280"
+                    Height="120"
+                    VerticalAlignment="Center"
+                    HorizontalAlignment="Center">
+                <StackPanel Spacing="16" VerticalAlignment="Center">
+                    <ProgressBar IsIndeterminate="True"
+                                 Height="6"
+                                 Foreground="#e67e22"
+                                 Background="#444"
+                                 BorderThickness="0" />
+                    <TextBlock Text="正在安装模组…"
+                               FontSize="15"
+                               Foreground="#cccccc"
+                               HorizontalAlignment="Center" />
+                </StackPanel>
+            </Border>
+        </Border>
     </Grid>
 </UserControl>

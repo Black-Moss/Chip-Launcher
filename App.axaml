@@ -1,12 +1,9 @@
 <Application xmlns="https://github.com/avaloniaui"
              xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:suki="clr-namespace:SukiUI;assembly=SukiUI"
              x:Class="ChipLauncher.App">
 
     <Application.Styles>
-        <FluentTheme />
-
-        <!-- 自定义样式 -->
-        <StyleInclude Source="avares://ChipLauncher/Styles/Styles.axaml" />
+        <suki:SukiTheme ThemeColor="Blue"/>
     </Application.Styles>
-
 </Application>

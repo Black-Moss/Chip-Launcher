@@ -1,6 +1,7 @@
 using System.Diagnostics;
 using System.Globalization;
 using System.Linq;
+using Avalonia;
 using Avalonia.Controls;
 using Avalonia.Data.Converters;
 using Avalonia.Input;
@@ -53,6 +54,13 @@ public partial class ModsPage : UserControl
         b => b ? "true" : "false"
     );
 
+    /// <summary>启用/禁用 → 切换按钮背景色</summary>
+    public static readonly IValueConverter ToggleColorConverter =
+        new FuncConverter<bool, IBrush>(enabled => enabled
+            ? new SolidColorBrush(Color.Parse("#2d6a2d"))
+            : new SolidColorBrush(Color.Parse("#6a2d2d"))
+        );
+
     private const string DefaultEmptyHint =
         "未找到 BepInEx 模组\n请确保游戏已安装 BepInEx\n且模组位于 BepInEx\\plugins 目录";
 
@@ -68,6 +76,14 @@ public partial class ModsPage : UserControl
     private ModInfo? _selectedMod;
 
     private ModInstaller? _installer;
+
+    private bool _sortAscending = true;
+
+    /// <summary>通过 CheckBox 勾选进行批量操作的模组集合</summary>
+    private readonly HashSet<ModInfo> _batchSelectedMods = new();
+
+    /// <summary>上一次点击的模组（用于 Shift 连选锚点）</summary>
+    private ModInfo? _lastClickedMod;
 
     // ── 字段 ──────────────────────────────────────────────────
 
@@ -114,7 +130,7 @@ public partial class ModsPage : UserControl
         var pluginsDir = Path.Combine(_gameDir, "BepInEx", "plugins");
         if (!Directory.Exists(pluginsDir))
         {
-            ShowError("未找到 BepInEx\\plugins 目录。\n请确保游戏已安装 BepInEx。");
+            ShowError("未找到 BepInEx\\plugins 目录。\n请确保游戏已安装 BepInEx 或存在 plugins 目录。");
             return;
         }
 
@@ -143,7 +159,7 @@ public partial class ModsPage : UserControl
                 }
 
                 var disabledFiles = Directory.GetFiles(dir, "*.disabled");
-                if (disabledFiles.Length > 0)
+                if (disabledFiles.Length <= 0) continue;
                 {
                     var dllPath = disabledFiles[0].Replace(".disabled", "");
                     if (!File.Exists(dllPath)) continue;
@@ -161,7 +177,7 @@ public partial class ModsPage : UserControl
                 }
             }
 
-            mods.Sort((a, b) => string.Compare(a.Name, b.Name, StringComparison.OrdinalIgnoreCase));
+            ApplySort(mods);
 
             _allMods = mods;
 
@@ -200,8 +216,7 @@ public partial class ModsPage : UserControl
     /// <summary>更新模组统计文本（总数/启用/禁用）</summary>
     private void UpdateModStats()
     {
-        var source = ModListBox.ItemsSource as List<ModInfo>;
-        if (source == null || source.Count == 0)
+        if (ModListBox.ItemsSource is not List<ModInfo> source || source.Count == 0)
         {
             ModStatsText.Text = "";
             return;
@@ -216,26 +231,38 @@ public partial class ModsPage : UserControl
             ModStatsText.Text = $"共 {total} 模组 · {enabled} 已启用 · {disabled} 已禁用（共 {_allMods.Count} 个）";
         else
             ModStatsText.Text = $"共 {total} 模组 · {enabled} 已启用 · {disabled} 已禁用";
+
+        if (_batchSelectedMods.Count > 0)
+            ModStatsText.Text += $" · 勾选 {_batchSelectedMods.Count} 个";
     }
 
-    /// <summary>更新批量操作按钮的文字（显示选中数量）</summary>
+    /// <summary>更新批量操作按钮的文字</summary>
     private void UpdateBatchButtonTexts()
     {
-        var count = ModListBox.SelectedItems!.Count;
-        BtnBatchEnable.Content = $"启用选中 ({count})";
-        BtnBatchDisable.Content = $"禁用选中 ({count})";
-        BtnBatchDelete.Content = $"🗑 删除选中 ({count})";
+        BtnBatchEnable.Content = "启用选中";
+        BtnBatchDisable.Content = "禁用选中";
+        BtnBatchDelete.Content = "删除选中";
     }
 
-    /// <summary>强制刷新列表显示（用于批量切换后）</summary>
+    /// <summary>清除所有勾选，隐藏批量工具栏</summary>
+    private void ClearBatchSelection()
+    {
+        foreach (var mod in _batchSelectedMods)
+            mod.IsChecked = false;
+        _batchSelectedMods.Clear();
+        BatchToolbar.IsVisible = false;
+        UpdateModStats();
+    }
+
+    /// <summary>强制刷新列表显示</summary>
     private void RefreshListDisplay()
     {
-        var source = ModListBox.ItemsSource as List<ModInfo>;
-        if (source != null)
+        if (ModListBox.ItemsSource is List<ModInfo> source)
         {
             ModListBox.ItemsSource = null;
             ModListBox.ItemsSource = source;
         }
+
         UpdateModStats();
     }
 
@@ -282,6 +309,20 @@ public partial class ModsPage : UserControl
         Process.Start(new ProcessStartInfo(url) { UseShellExecute = true });
     }
 
+    /// <summary>显示安装加载遮罩</summary>
+    private void ShowInstallOverlay()
+    {
+        InstallOverlay.IsVisible = true;
+        InstallOverlay.Opacity = 1;
+    }
+
+    /// <summary>隐藏安装加载遮罩</summary>
+    private void HideInstallOverlay()
+    {
+        InstallOverlay.IsVisible = false;
+        InstallOverlay.Opacity = 1;
+    }
+
     /// <summary>供 MainWindow 拖放调用 — 批量安装文件并刷新列表</summary>
     public async Task InstallFilesAsync(IEnumerable<string> filePaths)
     {
@@ -291,35 +332,50 @@ public partial class ModsPage : UserControl
             return;
         }
 
-        var installed = 0;
-        var failed = 0;
-        var lastMessage = "";
+        ShowInstallOverlay();
 
-        foreach (var localPath in filePaths)
+        try
         {
-            var (success, message) = await _installer.InstallAsync(localPath);
-            if (success)
-                installed++;
-            else
-                failed++;
-            lastMessage = message;
+            var installed = 0;
+            var failed = 0;
+            var lastMessage = "";
+
+            foreach (var localPath in filePaths)
+            {
+                var (success, message) = await _installer.InstallAsync(localPath);
+                if (success)
+                    installed++;
+                else
+                    failed++;
+                lastMessage = message;
+            }
+
+            // 刷新模组列表
+            LoadMods();
+
+            switch (installed)
+            {
+                case > 0 when failed == 0:
+                    AppNotification.Show($"已安装 {installed} 个模组", NotificationType.Success);
+                    break;
+                case > 0 when failed > 0:
+                    AppNotification.Show($"安装 {installed} 个，{failed} 个失败", NotificationType.Warning);
+                    break;
+                default:
+                    AppNotification.Show(lastMessage, NotificationType.Error);
+                    break;
+            }
         }
-
-        // 刷新模组列表
-        LoadMods();
-
-        if (installed > 0 && failed == 0)
-            AppNotification.Show($"已安装 {installed} 个模组", NotificationType.Success);
-        else if (installed > 0 && failed > 0)
-            AppNotification.Show($"安装 {installed} 个，{failed} 个失败", NotificationType.Warning);
-        else
-            AppNotification.Show(lastMessage, NotificationType.Error);
+        finally
+        {
+            HideInstallOverlay();
+        }
     }
 
     /// <summary>切换模组启用/禁用</summary>
     private async void OnToggleClick(object? sender, RoutedEventArgs e)
     {
-        if (sender is not Button button || button.Tag is not ModInfo mod) return;
+        if (sender is not Button { Tag: ModInfo mod }) return;
 
         var pluginFile = mod.PluginFilePath;
 
@@ -343,8 +399,7 @@ public partial class ModsPage : UserControl
             }
 
             // 刷新列表显示
-            var list = ModListBox.ItemsSource as List<ModInfo>;
-            if (list != null)
+            if (ModListBox.ItemsSource is List<ModInfo> list)
             {
                 var idx = list.IndexOf(mod);
                 if (idx >= 0)
@@ -364,38 +419,193 @@ public partial class ModsPage : UserControl
         }
     }
 
+    private void ApplySort(List<ModInfo> mods)
+    {
+        if (_sortAscending)
+            mods.Sort((a, b) => string.Compare(a.Name, b.Name, StringComparison.OrdinalIgnoreCase));
+        else
+            mods.Sort((a, b) => string.Compare(b.Name, a.Name, StringComparison.OrdinalIgnoreCase));
+    }
+
+    /// <summary>
+    ///     ListBox 指针按下事件
+    ///     • 普通单击 → 选中查看配置 + 切换批量勾选
+    ///     • Shift+单击 → 从上次点击到本次范围内，
+    ///       全部已勾选则全部取消，否则全部勾选
+    /// </summary>
+    private void OnModListPointerPressed(object? sender, PointerPressedEventArgs e)
+    {
+        if (!e.GetCurrentPoint(this).Properties.IsLeftButtonPressed) return;
+
+        var mod = FindClickedMod(e);
+        if (mod == null) return;
+
+        if (e.KeyModifiers.HasFlag(KeyModifiers.Shift) && _lastClickedMod != null)
+        {
+            // Shift+单击：范围批量选择
+            if (ModListBox.ItemsSource is IList<ModInfo> source)
+                ToggleBatchRange(mod, source);
+        }
+        else
+        {
+            // 普通单击：选中查看配置 + 切换批量选择（单选行为：替换）
+            ModListBox.SelectedItem = mod;
+            ToggleSingleSelect(mod);
+        }
+
+        UpdateBatchUI();
+    }
+
+    /// <summary>从 PointerPressed 事件源向上查找被点击的模组</summary>
+    private static ModInfo? FindClickedMod(PointerPressedEventArgs e)
+    {
+        var src = e.Source as StyledElement;
+        while (src != null)
+        {
+            if (src is ListBoxItem { DataContext: ModInfo mod })
+                return mod;
+            src = src.Parent;
+        }
+        return null;
+    }
+
+    /// <summary>
+    ///     范围切换：从 _lastClickedMod 到 targetMod 之间
+    ///     全部已勾选 → 全部取消；否则全部勾选
+    /// </summary>
+    private void ToggleBatchRange(ModInfo targetMod, IList<ModInfo> source)
+    {
+        var currentIdx = source.IndexOf(targetMod);
+        if (_lastClickedMod == null) return;
+        var lastIdx = source.IndexOf(_lastClickedMod);
+        if (currentIdx < 0 || lastIdx < 0) return;
+
+        var start = Math.Min(currentIdx, lastIdx);
+        var end = Math.Max(currentIdx, lastIdx);
+
+        // 判断范围内是否全部已勾选
+        var allChecked = true;
+        for (var i = start; i <= end; i++)
+            if (!source[i].IsChecked) { allChecked = false; break; }
+
+        // 全部已勾选 → 全部取消；否则全部勾选
+        for (var i = start; i <= end; i++)
+        {
+            var rangeMod = source[i];
+            var newState = !allChecked;
+            rangeMod.IsChecked = newState;
+            if (newState)
+                _batchSelectedMods.Add(rangeMod);
+            else
+                _batchSelectedMods.Remove(rangeMod);
+        }
+    }
+
+    /// <summary>
+    ///     模组项点击 → 切换批量勾选（已有一个时替换选中）
+    /// </summary>
+    private void ToggleSingleSelect(ModInfo mod)
+    {
+        var newChecked = !mod.IsChecked;
+
+        // 已选中 1 个且点击不同模组 → 替换
+        if (_batchSelectedMods.Count == 1 && !_batchSelectedMods.Contains(mod))
+        {
+            var current = _batchSelectedMods.First();
+            current.IsChecked = false;
+            _batchSelectedMods.Clear();
+        }
+
+        mod.IsChecked = newChecked;
+        if (newChecked)
+            _batchSelectedMods.Add(mod);
+        else
+            _batchSelectedMods.Remove(mod);
+
+        _lastClickedMod = mod;
+    }
+
+    /// <summary>
+    ///     复选框点击 → 添加/移除（始终多选，不替换已有选中）
+    /// </summary>
+    private void ToggleMultiSelect(ModInfo mod, bool newCheckedState)
+    {
+        mod.IsChecked = newCheckedState;
+        if (newCheckedState)
+            _batchSelectedMods.Add(mod);
+        else
+            _batchSelectedMods.Remove(mod);
+
+        _lastClickedMod = mod;
+    }
+
+    /// <summary>更新批量操作 UI（工具栏显隐、按钮文字、全选文本、统计）</summary>
+    private void UpdateBatchUI()
+    {
+        BatchToolbar.IsVisible = _batchSelectedMods.Count > 0;
+        UpdateBatchButtonTexts();
+        var totalCount = (ModListBox.ItemsSource as IList<ModInfo>)?.Count ?? 0;
+        BtnBatchSelectAll.Content = _batchSelectedMods.Count >= totalCount && totalCount > 0
+            ? "全不选" : "全选";
+        UpdateModStats();
+    }
+
+    /// <summary>
+    ///     复选框点击 → 添加/移除勾选（始终多选）
+    /// </summary>
+    private void OnModCheckBoxClick(object? sender, RoutedEventArgs e)
+    {
+        if (sender is not CheckBox { Tag: ModInfo mod }) return;
+
+        // 读取 CheckBox 视觉状态（点击后已更新），而非 mod.IsChecked（绑定可能尚未写入）
+        var isChecked = sender is CheckBox cb && cb.IsChecked == true;
+        ToggleMultiSelect(mod, isChecked);
+        UpdateBatchUI();
+    }
+
+    /// <summary>反选：所有已勾选的取消，未勾选的勾选</summary>
+    private void OnBatchInvertClick(object? sender, RoutedEventArgs e)
+    {
+        if (ModListBox.ItemsSource is not IList<ModInfo> source) return;
+
+        foreach (var mod in source)
+        {
+            var newState = !mod.IsChecked;
+            mod.IsChecked = newState;
+            if (newState)
+                _batchSelectedMods.Add(mod);
+            else
+                _batchSelectedMods.Remove(mod);
+        }
+
+        UpdateBatchUI();
+    }
+
     private void OnModSelected(object? sender, SelectionChangedEventArgs e)
     {
         _pendingBatchDelete = null;
-        var selectedCount = ModListBox.SelectedItems!.Count;
+        var selectedCount = ModListBox.SelectedItems?.Count ?? 0;
 
-        if (selectedCount == 0)
+        switch (selectedCount)
         {
-            _selectedMod = null;
-            ClearConfigPanel();
-            BatchToolbar.IsVisible = false;
-            return;
+            case 0:
+                _selectedMod = null;
+                ClearConfigPanel();
+                return;
+            case 1 when ModListBox.SelectedItems![0] is ModInfo mod:
+                // 单选 → 显示配置面板
+                _selectedMod = mod;
+                LoadConfigForMod(mod);
+                return;
         }
-
-        if (selectedCount == 1 && ModListBox.SelectedItems[0] is ModInfo mod)
-        {
-            // 单选 → 显示配置面板（原有行为）
-            _selectedMod = mod;
-            LoadConfigForMod(mod);
-            BatchToolbar.IsVisible = false;
-            return;
-        }
-
-        // 多选 → 显示批量操作工具栏，隐藏配置面板
-        _selectedMod = null;
-        ClearConfigPanel();
-        BatchToolbar.IsVisible = true;
-        UpdateBatchButtonTexts();
     }
 
     /// <summary>加载选中模组的 BepInEx 配置（根据 GUID 匹配 {BepInEx/config}/{GUID}.cfg）</summary>
     private void LoadConfigForMod(ModInfo mod)
     {
+        // 始终显示模组名
+        ConfigModName.Text = mod.Name;
+
         _gameDir = GameLocalization.GetGameDirectory();
         if (string.IsNullOrEmpty(_gameDir))
         {
@@ -416,8 +626,10 @@ public partial class ModsPage : UserControl
                 {
                     _currentConfig = cfg;
                     ConfigFileName.Text = cfg.FileName;
-                    ConfigDescription.Text = cfg.ModDescription;
+                    ConfigFileName.IsVisible = true;
+                    ConfigDescription.IsVisible = false;
                     ConfigItemsControl.ItemsSource = cfg.Entries;
+                    BtnSaveConfig.IsVisible = true;
                     ConfigPanel.IsVisible = true;
                     NoSelectionHint.IsVisible = false;
                     return;
@@ -437,8 +649,10 @@ public partial class ModsPage : UserControl
                 {
                     _currentConfig = cfg;
                     ConfigFileName.Text = cfg.FileName;
-                    ConfigDescription.Text = cfg.ModDescription;
+                    ConfigFileName.IsVisible = true;
+                    ConfigDescription.IsVisible = false;
                     ConfigItemsControl.ItemsSource = cfg.Entries;
+                    BtnSaveConfig.IsVisible = true;
                     ConfigPanel.IsVisible = true;
                     NoSelectionHint.IsVisible = false;
                     return;
@@ -453,6 +667,7 @@ public partial class ModsPage : UserControl
     {
         _currentConfig = config;
         ConfigItemsControl.ItemsSource = config.Entries;
+        BtnSaveConfig.IsVisible = true;
         ConfigPanel.IsVisible = true;
         NoSelectionHint.IsVisible = false;
     }
@@ -462,8 +677,10 @@ public partial class ModsPage : UserControl
         ClearConfigPanel();
 
         ConfigItemsControl.ItemsSource = null;
-        ConfigFileName.Text = "";
+        ConfigFileName.IsVisible = false;
         ConfigDescription.Text = reason;
+        ConfigDescription.IsVisible = true;
+        BtnSaveConfig.IsVisible = false;
         ConfigPanel.IsVisible = true;
         NoSelectionHint.IsVisible = false;
     }
@@ -472,9 +689,12 @@ public partial class ModsPage : UserControl
     {
         ConfigPanel.IsVisible = false;
         NoSelectionHint.IsVisible = true;
+        BtnSaveConfig.IsVisible = true;
         _currentConfig = null;
         DeleteConfirmPanel.IsVisible = false;
-        BatchToolbar.IsVisible = false;
+        ConfigModName.Text = "";
+        ConfigFileName.IsVisible = false;
+        ConfigDescription.IsVisible = false;
     }
 
     // ── 删除模组 ──────────────────────────────────────────────
@@ -499,7 +719,7 @@ public partial class ModsPage : UserControl
         DeleteConfirmPanel.IsVisible = false;
 
         // 优先处理批量删除
-        if (_pendingBatchDelete != null && _pendingBatchDelete.Count > 0)
+        if (_pendingBatchDelete is { Count: > 0 })
         {
             var mods = _pendingBatchDelete;
             _pendingBatchDelete = null;
@@ -565,11 +785,63 @@ public partial class ModsPage : UserControl
             ok ? NotificationType.Success : NotificationType.Error);
     }
 
+    /// <summary>用默认程序打开当前选中模组的配置文件</summary>
+    private async void OnOpenConfigClick(object? sender, RoutedEventArgs e)
+    {
+        if (_selectedMod == null) return;
+
+        var gameDir = GameLocalization.GetGameDirectory();
+        if (string.IsNullOrEmpty(gameDir))
+        {
+            AppNotification.Show("未找到游戏目录", NotificationType.Warning);
+            return;
+        }
+
+        var configDir = Path.Combine(gameDir, "BepInEx", "config");
+        string? cfgPath = null;
+
+        // 优先按 GUID 查找
+        if (!string.IsNullOrEmpty(_selectedMod.Guid))
+        {
+            var path = Path.Combine(configDir, _selectedMod.Guid + ".cfg");
+            if (File.Exists(path))
+                cfgPath = path;
+        }
+
+        // 降级：在模组目录下查找 config/
+        if (cfgPath == null)
+        {
+            var legacyCfgDir = Path.Combine(_selectedMod.DirectoryPath, "config");
+            if (Directory.Exists(legacyCfgDir))
+            {
+                var files = Directory.GetFiles(legacyCfgDir, "*.cfg");
+                if (files.Length > 0)
+                    cfgPath = files[0];
+            }
+        }
+
+        if (cfgPath == null)
+        {
+            AppNotification.Show("未找到配置文件", NotificationType.Warning);
+            return;
+        }
+
+        try
+        {
+            Process.Start(new ProcessStartInfo(cfgPath) { UseShellExecute = true });
+        }
+        catch (Exception ex)
+        {
+            Logger.Error("打开配置文件失败", ex);
+            AppNotification.Show("打开配置文件失败", NotificationType.Error);
+        }
+    }
+
     // ── 批量操作 ────────────────────────────────────────────────
 
     private async void OnBatchEnableClick(object? sender, RoutedEventArgs e)
     {
-        var selected = ModListBox.SelectedItems!.Cast<ModInfo>().ToList();
+        var selected = _batchSelectedMods.ToList();
         var toggled = 0;
 
         foreach (var mod in selected)
@@ -592,13 +864,14 @@ public partial class ModsPage : UserControl
             }
         }
 
+        ClearBatchSelection();
         RefreshListDisplay();
         AppNotification.Show($"已启用 {toggled} 个模组", NotificationType.Success);
     }
 
     private async void OnBatchDisableClick(object? sender, RoutedEventArgs e)
     {
-        var selected = ModListBox.SelectedItems!.Cast<ModInfo>().ToList();
+        var selected = _batchSelectedMods.ToList();
         var toggled = 0;
 
         foreach (var mod in selected)
@@ -621,13 +894,14 @@ public partial class ModsPage : UserControl
             }
         }
 
+        ClearBatchSelection();
         RefreshListDisplay();
         AppNotification.Show($"已禁用 {toggled} 个模组", NotificationType.Success);
     }
 
     private async void OnBatchDeleteClick(object? sender, RoutedEventArgs e)
     {
-        var selected = ModListBox.SelectedItems!.Cast<ModInfo>().ToList();
+        var selected = _batchSelectedMods.ToList();
         if (selected.Count == 0) return;
 
         if (AppConfig.Instance.ConfirmModDeletion)
@@ -641,10 +915,56 @@ public partial class ModsPage : UserControl
             foreach (var mod in selected)
                 DeleteMod(mod);
 
+            ClearBatchSelection();
             ClearConfigPanel();
             LoadMods();
             AppNotification.Show($"已删除 {selected.Count} 个模组", NotificationType.Success);
         }
+    }
+
+    /// <summary>切换 A-Z / Z-A 排序</summary>
+    private void OnSortOrderClick(object? sender, RoutedEventArgs e)
+    {
+        _sortAscending = !_sortAscending;
+        BtnSortOrder.Content = _sortAscending ? "A-Z ▾" : "Z-A ▴";
+
+        // 重新应用排序
+        if (_allMods == null) return;
+        ApplySort(_allMods);
+        RefreshListDisplay();
+    }
+
+    /// <summary>全选 / 全不选 — 通过数据绑定同步 CheckBox 状态</summary>
+    private void OnBatchSelectAllClick(object? sender, RoutedEventArgs e)
+    {
+        if (ModListBox.ItemsSource
+                is not IList<ModInfo> source
+            || source.Count == 0) return;
+
+        // 如果当前已全选 → 全不选
+        if (_batchSelectedMods.Count == source.Count)
+        {
+            _batchSelectedMods.Clear();
+            BtnBatchSelectAll.Content = "全选";
+            BatchToolbar.IsVisible = false;
+            UpdateModStats();
+            // 数据绑定自动更新所有 CheckBox 的 IsChecked
+            foreach (var mod in source)
+                mod.IsChecked = false;
+            return;
+        }
+
+        // 否则全选
+        _batchSelectedMods.Clear();
+        foreach (var mod in source)
+        {
+            mod.IsChecked = true; // 数据绑定自动更新 CheckBox 视觉状态
+            _batchSelectedMods.Add(mod);
+        }
+        BtnBatchSelectAll.Content = "全不选";
+        BatchToolbar.IsVisible = true;
+        UpdateBatchButtonTexts();
+        UpdateModStats();
     }
 
     private void ShowError(string message)
@@ -660,8 +980,7 @@ public partial class ModsPage : UserControl
     /// <summary>弹出文件选择对话框，选择 .dll 或 .zip 模组文件进行安装</summary>
     private async void OnInstallLocalClick(object? sender, RoutedEventArgs e)
     {
-        var parentWindow = this.VisualRoot as Window;
-        if (parentWindow == null) return;
+        if (VisualRoot is not Window parentWindow) return;
 
         var files = await parentWindow.StorageProvider.OpenFilePickerAsync(new FilePickerOpenOptions
         {
@@ -669,12 +988,12 @@ public partial class ModsPage : UserControl
             AllowMultiple = true,
             FileTypeFilter = new List<FilePickerFileType>
             {
-                new("模组文件") { Patterns = new[] { "*.dll", "*.zip" } },
-                new("所有文件") { Patterns = new[] { "*" } }
+                new("模组文件") { Patterns = ["*.dll", "*.zip"] },
+                new("所有文件") { Patterns = ["*"] }
             }
         });
 
-        if (files == null || files.Count == 0) return;
+        if (files.Count == 0) return;
 
         var filePaths = files.Select(f => f.Path.LocalPath).ToArray();
         await InstallFilesAsync(filePaths);
@@ -686,7 +1005,7 @@ public partial class ModsPage : UserControl
         var gameDir = GameLocalization.GetGameDirectory();
         if (string.IsNullOrEmpty(gameDir))
         {
-            AppNotification.Show("未找到游戏目录，请在设置页中配置", NotificationType.Warning);
+            AppNotification.Show("未找到游戏目录", NotificationType.Warning);
             return;
         }
 
@@ -706,7 +1025,7 @@ public partial class ModsPage : UserControl
         var gameDir = GameLocalization.GetGameDirectory();
         if (string.IsNullOrEmpty(gameDir))
         {
-            AppNotification.Show("未找到游戏目录，请在设置页中配置", NotificationType.Warning);
+            AppNotification.Show("未找到游戏目录", NotificationType.Warning);
             return;
         }
 
@@ -722,27 +1041,19 @@ public partial class ModsPage : UserControl
 }
 
 /// <summary>双向值转换器辅助类</summary>
-public class FuncConverter<TIn, TOut> : IValueConverter
+public class FuncConverter<TIn, TOut>(Func<TIn?, TOut?> convert, Func<TOut?, TIn?>? convertBack = null)
+    : IValueConverter
 {
-    private readonly Func<TIn?, TOut?> _convert;
-    private readonly Func<TOut?, TIn?>? _convertBack;
-
-    public FuncConverter(Func<TIn?, TOut?> convert, Func<TOut?, TIn?>? convertBack = null)
-    {
-        _convert = convert;
-        _convertBack = convertBack;
-    }
-
     public object? Convert(object? value, Type targetType, object? parameter, CultureInfo culture)
     {
-        return value is TIn tIn ? _convert(tIn) : _convert(default);
+        return value is TIn tIn ? convert(tIn) : convert(default);
     }
 
     public object? ConvertBack(object? value, Type targetType, object? parameter, CultureInfo culture)
     {
-        if (_convertBack == null)
+        if (convertBack == null)
             throw new NotSupportedException();
 
-        return value is TOut tOut ? _convertBack(tOut) : _convertBack(default);
+        return value is TOut tOut ? convertBack(tOut) : convertBack(default);
     }
 }

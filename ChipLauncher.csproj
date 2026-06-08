@@ -17,12 +17,12 @@
     </ItemGroup>
 
     <ItemGroup>
-        <PackageReference Include="Avalonia" Version="12.0.3" />
-        <PackageReference Include="Avalonia.Desktop" Version="11.2.4" />
-        <PackageReference Include="Avalonia.Themes.Fluent" Version="11.2.4" />
-        <PackageReference Include="Avalonia.Fonts.Inter" Version="11.2.4" />
+        <PackageReference Include="Avalonia" Version="11.3.14" />
+        <PackageReference Include="Avalonia.Desktop" Version="11.3.14" />
+        <PackageReference Include="Avalonia.Themes.Fluent" Version="11.3.14" />
+        <PackageReference Include="Avalonia.Fonts.Inter" Version="11.3.14" />
         <PackageReference Include="SharpCompress" Version="0.49.1" />
-        <PackageReference Include="SukiUI" Version="7.0.1" />
+        <PackageReference Include="SukiUI" Version="6.1.1" />
         <PackageReference Include="System.Reflection.MetadataLoadContext" Version="10.0.8" />
     </ItemGroup>
 

@@ -3,6 +3,7 @@ using System.Reflection;
 using Avalonia.Controls;
 using Avalonia.Input;
 using Avalonia.Media.Imaging;
+using Avalonia.Platform;
 using ChipLauncher.Models;
 
 namespace ChipLauncher.Views;
@@ -13,75 +14,97 @@ public partial class AboutPage : UserControl
     {
         InitializeComponent();
 
-        // 从 .ico 中提取最大分辨率帧显示
-        var iconPath = Path.Combine(AppContext.BaseDirectory, "ChipLauncher.ico");
-        if (File.Exists(iconPath))
-        {
-            try
-            {
-                AppIcon.Source = LoadLargestIconFrame(iconPath);
-            }
-            catch
-            {
-                // 忽略，使用默认样式
-            }
-        }
-
         var info = new LauncherInfo();
         VersionText.Text = $"v{info.Version}";
 
+        // 显示构建版本号
         var assembly = Assembly.GetExecutingAssembly();
         var version = assembly.GetName().Version;
         BuildInfoText.Text = version != null
             ? $"Build {version.Major}.{version.Minor}.{version.Build}.{version.Revision}"
             : "";
+
+        // 加载窗口图标
+        LoadAppIcon();
+    }
+
+    /// <summary>加载 ICO 文件并显示在关于页</summary>
+    private void LoadAppIcon()
+    {
+        try
+        {
+            var icoPath = System.IO.Path.Combine(
+                AppContext.BaseDirectory, "ChipLauncher.ico");
+            if (!System.IO.File.Exists(icoPath)) return;
+
+            // ICO 文件格式:
+            //   字节 0-1: 保留 (0)
+            //   字节 2-3: 类型 (1 = ICO)
+            //   字节 4-5: 图像数量
+            //   之后每个目录项 16 字节:
+            //     字节 0-3: 宽, 高, 颜色数, 保留
+            //     字节 4-5: 颜色平面
+            //     字节 6-7: 位深
+            //     字节 8-11: 图像数据大小 (LittleEndian int32)
+            //     字节 12-15: 图像数据偏移量 (LittleEndian int32)
+            var data = System.IO.File.ReadAllBytes(icoPath);
+            var count = BitConverter.ToInt16(data, 4);
+            if (count == 0) return;
+
+            // 取第一个条目的数据偏移和大小
+            var imageSize   = BitConverter.ToInt32(data, 14);
+            var imageOffset = BitConverter.ToInt32(data, 18);
+            if (imageOffset + imageSize > data.Length) return;
+
+            // ICO 内嵌的图像可能是 PNG 或 BMP DIB。尝试直接解码，
+            // 若失败则直接用 WriteableBitmap 写入原始 BGRA 像素（保留 alpha）。
+            using (var ms = new System.IO.MemoryStream(data, imageOffset, imageSize))
+            {
+                try
+                {
+                    AppIcon.Source = new Bitmap(ms);
+                    return;
+                }
+                catch
+                {
+                    // 尝试原始像素方式
+                }
+            }
+
+            // 解析 BITMAPINFOHEADER
+            var biSize = BitConverter.ToInt32(data, imageOffset);       // 通常 40
+            var biWidth = BitConverter.ToInt32(data, imageOffset + 4);
+            var biHeight = BitConverter.ToInt32(data, imageOffset + 8); // ICO 中翻倍
+            var biBitCount = BitConverter.ToInt16(data, imageOffset + 14);
+
+            var actualHeight = biHeight / 2;
+            var rowSize = ((biWidth * biBitCount + 31) / 32) * 4;       // 4 字节对齐行宽
+            var pixelDataSize = rowSize * actualHeight;                 // 仅 XOR 像素，不含 AND mask
+
+            // 直接用 WriteableBitmap 写入原始 BGRA 像素，保留 alpha 通道
+            var writeableBitmap = new WriteableBitmap(
+                new Avalonia.PixelSize(biWidth, actualHeight),
+                new Avalonia.Vector(96, 96),
+                Avalonia.Platform.PixelFormat.Bgra8888,
+                Avalonia.Platform.AlphaFormat.Unpremul);
+
+            using (var locked = writeableBitmap.Lock())
+            {
+                System.Runtime.InteropServices.Marshal.Copy(
+                    data, imageOffset + biSize, locked.Address, pixelDataSize);
+            }
+
+            AppIcon.Source = writeableBitmap;
+        }
+        catch
+        {
+            // 忽略图标加载失败
+        }
     }
 
     private void OnLinkClick(object? sender, PointerPressedEventArgs e)
     {
         if (sender is Border { Tag: string url } && !string.IsNullOrEmpty(url))
             Process.Start(new ProcessStartInfo(url) { UseShellExecute = true });
-    }
-
-    /// <summary>
-    ///     从 .ico 文件中提取最大尺寸的 PNG 帧作为 Bitmap
-    /// </summary>
-    private static Bitmap LoadLargestIconFrame(string icoPath)
-    {
-        using var stream = File.OpenRead(icoPath);
-        using var reader = new BinaryReader(stream);
-
-        // ICO 文件头
-        reader.ReadUInt16(); // reserved
-        reader.ReadUInt16(); // reserved
-        var count = reader.ReadUInt16();
-
-        // 读取目录项，找到最大的帧
-        var entries = new (byte Width, byte Height, uint Size, uint Offset)[count];
-        for (var i = 0; i < count; i++)
-        {
-            var w = reader.ReadByte();     // 0 = 256
-            var h = reader.ReadByte();     // 0 = 256
-            reader.ReadByte();             // color palette count
-            reader.ReadByte();             // reserved
-            reader.ReadUInt16();           // planes / color depth
-            reader.ReadUInt16();           // bits per pixel
-            var size = reader.ReadUInt32();
-            var offset = reader.ReadUInt32();
-            entries[i] = (w, h, size, offset);
-        }
-
-        // 按尺寸降序排列，取最大帧
-        var best = entries
-            .OrderByDescending(e => (e.Width == 0 ? 256 : e.Width) * (e.Height == 0 ? 256 : e.Height))
-            .First();
-
-        // 读取该帧的图像数据
-        reader.BaseStream.Seek(best.Offset, SeekOrigin.Begin);
-        var imageData = reader.ReadBytes((int)best.Size);
-
-        // 现代 .ico 的大尺寸帧通常是 PNG 格式
-        using var ms = new MemoryStream(imageData);
-        return new Bitmap(ms);
     }
 }

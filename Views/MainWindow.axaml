@@ -1,248 +1,156 @@
-<Window xmlns="https://github.com/avaloniaui"
-        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
-        x:Class="ChipLauncher.Views.MainWindow"
-        Title="Chip Launcher"
-        Height="650" Width="900"
-        WindowStartupLocation="CenterScreen"
-        SystemDecorations="None"
-        Background="#000000"
-        DragDrop.AllowDrop="True">
+<suki:SukiWindow xmlns="https://github.com/avaloniaui"
+                 xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+                 xmlns:suki="clr-namespace:SukiUI.Controls;assembly=SukiUI"
+                 xmlns:local="clr-namespace:ChipLauncher.Views"
+                 x:Class="ChipLauncher.Views.MainWindow"
+                 Title=""
+                 Height="650" Width="900"
+                 MinHeight="650" MinWidth="900"
+                 WindowStartupLocation="CenterScreen"
+                 BackgroundStyle="Flat"
+                 TransparencyLevelHint="None"
+                 DragDrop.AllowDrop="True"
+                 DragDrop.DragEnter="OnWindowDragEnter"
+                 DragDrop.DragLeave="OnWindowDragLeave"
+                 DragDrop.Drop="OnWindowDrop">
 
-    <!-- 外层 Border：ClipToBounds 让圆角裁剪内容 -->
-    <Border CornerRadius="10"
-            Background="#000000"
-            ClipToBounds="True">
+    <!-- SukiUI Toast 主机 -->
+    <suki:SukiWindow.Hosts>
+        <suki:SukiToastHost Name="ToastHost" MaxToasts="5" />
+    </suki:SukiWindow.Hosts>
 
-        <Grid RowDefinitions="90,*" ColumnDefinitions="160,*">
+    <!-- 标题栏左侧：大标题 + 游戏文本 -->
+    <suki:SukiWindow.LogoContent>
+        <StackPanel Orientation="Horizontal"
+                    VerticalAlignment="Center"
+                    Spacing="12">
+            <TextBlock Text="Chip Launcher"
+                       FontSize="22"
+                       FontWeight="Bold"
+                       Foreground="White"
+                       VerticalAlignment="Center" />
 
-            <!-- 顶部标题栏（拖拽区域） -->
-            <Border Name="TitleBar"
-                    Grid.Row="0" Grid.ColumnSpan="2"
-                    Background="#000000">
-                <Grid Margin="20,0,10,0" ColumnDefinitions="Auto,*,Auto">
-
-                    <TextBlock Text="Chip Launcher"
-                               FontSize="22"
-                               FontWeight="Bold"
-                               Foreground="White"
-                               VerticalAlignment="Center" />
-
-                    <!-- 游戏信息（灰色小字，紧挨标题右侧） -->
-                    <ItemsControl Name="GameInfoPanel"
-                                  Grid.Column="1"
-                                  Margin="12,0,0,0"
-                                  VerticalAlignment="Center"
-                                  IsVisible="False">
-                        <ItemsControl.ItemsPanel>
-                            <ItemsPanelTemplate>
-                                <StackPanel Orientation="Horizontal" />
-                            </ItemsPanelTemplate>
-                        </ItemsControl.ItemsPanel>
-                        <ItemsControl.ItemTemplate>
-                            <DataTemplate>
-                                <TextBlock Text="{Binding}"
-                                           FontSize="12"
-                                           Foreground="#888888"
-                                           Margin="4,0" />
-                            </DataTemplate>
-                        </ItemsControl.ItemTemplate>
-                    </ItemsControl>
-
-                    <!-- BepInEx 安装状态警告 -->
-                    <Border Name="BepInExWarning"
-                            Grid.Column="1"
-                            VerticalAlignment="Center"
-                            Background="#3d1a00"
-                            CornerRadius="4"
-                            Padding="8,3"
-                            IsVisible="False"
-                            Margin="12,0,0,0">
-                        <TextBlock Text="⚠ BepInEx 未安装"
-                                   FontSize="11"
-                                   Foreground="#e67e22" />
-                    </Border>
-
-                    <!-- 窗口控制按钮 -->
-                    <StackPanel Grid.Column="2"
-                                Orientation="Horizontal"
-                                VerticalAlignment="Center">
-                        <Button Name="BtnMinimize"
-                                Content="─"
-                                Width="30" Height="30"
-                                FontSize="16"
-                                ToolTip.Tip="最小化"
-                                Background="Transparent"
-                                Foreground="White"
-                                BorderThickness="0"
-                                Cursor="Hand" />
-                        <Button Name="BtnMaximize"
-                                Content="▢"
-                                Width="30" Height="30"
-                                FontSize="16"
-                                Margin="4,0"
-                                ToolTip.Tip="最大化"
-                                Background="Transparent"
-                                Foreground="White"
-                                BorderThickness="0"
-                                Cursor="Hand" />
-                        <Button Name="BtnClose"
-                                Content="╳"
-                                Width="30" Height="30"
-                                FontSize="16"
-                                ToolTip.Tip="关闭"
-                                Background="Transparent"
-                                Foreground="White"
-                                BorderThickness="0"
-                                Cursor="Hand" />
-                    </StackPanel>
-                </Grid>
-            </Border>
-
-            <!-- 左侧导航栏 -->
-            <Border Grid.Row="1" Grid.Column="0"
-                    Background="#000000">
-                <Grid RowDefinitions="*,Auto">
-                    <!-- 页面导航按钮（顶部） -->
-                    <StackPanel>
-                        <Border Name="BtnMods"
-                                Background="Transparent"
-                                Padding="15,12"
-                                Margin="0,2"
-                                Cursor="Hand"
-                                PointerEntered="NavItemPointerEnter"
-                                PointerExited="NavItemPointerLeave">
-                            <TextBlock Text="📦 模组管理"
-                                       FontSize="15"
-                                       Foreground="#CCCCCC"
-                                       TextAlignment="Center"
-                                       HorizontalAlignment="Stretch" />
-                        </Border>
-                        <Border Name="BtnNews"
-                                Background="Transparent"
-                                Padding="15,12"
-                                Margin="0,2"
-                                Cursor="Hand"
-                                PointerEntered="NavItemPointerEnter"
-                                PointerExited="NavItemPointerLeave">
-                            <TextBlock Text="📰 游戏资讯"
-                                       FontSize="15"
-                                       Foreground="#CCCCCC"
-                                       TextAlignment="Center"
-                                       HorizontalAlignment="Stretch" />
-                        </Border>
-                        <Border Name="BtnSettings"
-                                Background="Transparent"
-                                Padding="15,12"
-                                Margin="0,2"
-                                Cursor="Hand"
-                                PointerEntered="NavItemPointerEnter"
-                                PointerExited="NavItemPointerLeave">
-                            <TextBlock Text="⚙ 设置"
-                                       FontSize="15"
-                                       Foreground="#CCCCCC"
-                                       TextAlignment="Center"
-                                       HorizontalAlignment="Stretch" />
-                        </Border>
-                        <Border Name="BtnAbout"
-                                Background="Transparent"
-                                Padding="15,12"
-                                Margin="0,2"
-                                Cursor="Hand"
-                                PointerEntered="NavItemPointerEnter"
-                                PointerExited="NavItemPointerLeave">
-                            <TextBlock Text="ℹ 关于"
-                                       FontSize="15"
-                                       Foreground="#CCCCCC"
-                                       TextAlignment="Center"
-                                       HorizontalAlignment="Stretch" />
-                        </Border>
-                    </StackPanel>
-
-                    <!-- 启动游戏按钮（底部）：白圆角边框，与侧边/底边距离一致 -->
-                    <Border Name="BtnPlay"
-                            Grid.Row="1"
-                            Background="Transparent"
-                            Padding="15,12"
-                            Margin="12,2,12,12"
-                            Cursor="Hand"
-                            CornerRadius="6"
-                            BorderBrush="White"
-                            BorderThickness="1"
-                            PointerEntered="NavItemPointerEnter"
-                            PointerExited="NavItemPointerLeave">
-                        <TextBlock Text="⏬ 启动游戏"
-                                   FontSize="15"
-                                   Foreground="#CCCCCC"
-                                   TextAlignment="Center"
-                                   HorizontalAlignment="Stretch" />
-                    </Border>
-                </Grid>
-            </Border>
-
-            <!-- 右侧内容区 -->
-            <ContentControl Name="ContentFrame"
-                            Grid.Row="1" Grid.Column="1"
-                            Background="#000000" />
-
-            <!-- ══════ 全局通知 Toast（支持叠加堆栈 + 渐变消失） ══════ -->
-            <ItemsControl Name="ToastContainer"
-                          Grid.Row="0" Grid.RowSpan="2"
-                          Grid.Column="0" Grid.ColumnSpan="2"
-                          IsHitTestVisible="False"
-                          VerticalAlignment="Top"
-                          HorizontalAlignment="Center"
-                          Margin="0,20,0,0"
-                          ZIndex="300">
+            <!-- 游戏信息 -->
+            <ItemsControl Name="GameInfoPanel"
+                          VerticalAlignment="Center"
+                          IsVisible="False">
                 <ItemsControl.ItemsPanel>
                     <ItemsPanelTemplate>
-                        <StackPanel HorizontalAlignment="Center" />
+                        <StackPanel Orientation="Horizontal" />
                     </ItemsPanelTemplate>
                 </ItemsControl.ItemsPanel>
                 <ItemsControl.ItemTemplate>
                     <DataTemplate>
-                        <Border Background="{Binding BackgroundColor}"
-                                CornerRadius="8"
-                                Padding="20,12"
-                                Margin="0,0,0,8"
-                                Opacity="{Binding Opacity}"
-                                MaxWidth="520">
-                            <TextBlock Text="{Binding Message}"
-                                       FontSize="14"
-                                       Foreground="{Binding TextColor}"
-                                       TextWrapping="Wrap"
-                                       HorizontalAlignment="Center" />
-                        </Border>
+                        <TextBlock Text="{Binding}"
+                                   FontSize="12"
+                                   Foreground="#888888"
+                                   Margin="4,0" />
                     </DataTemplate>
                 </ItemsControl.ItemTemplate>
             </ItemsControl>
 
-            <!-- ══════ 窗口级拖放遮罩 ══════ -->
-            <Border Name="WindowDropOverlay"
-                    Grid.Row="0" Grid.RowSpan="2"
-                    Grid.Column="0" Grid.ColumnSpan="2"
-                    Background="#aa000000"
-                    IsVisible="False"
-                    IsHitTestVisible="False"
-                    ZIndex="200">
-                <Border BorderBrush="#e67e22"
-                        BorderThickness="2"
-                        CornerRadius="8"
-                        Background="#1a1a1a"
-                        VerticalAlignment="Center"
-                        HorizontalAlignment="Center"
-                        Padding="50,35">
-                    <StackPanel Spacing="12" HorizontalAlignment="Center">
-                        <TextBlock Text="📦 释放以安装模组"
-                                   FontSize="22"
-                                   Foreground="#e67e22"
-                                   HorizontalAlignment="Center" />
-                        <TextBlock Name="WindowDropFileName"
-                                   FontSize="14"
-                                   Foreground="#aaa"
-                                   HorizontalAlignment="Center" />
-                    </StackPanel>
-                </Border>
+            <!-- BepInEx 警告 -->
+            <Border Name="BepInExWarning"
+                    VerticalAlignment="Center"
+                    Background="#3d1a00"
+                    CornerRadius="4"
+                    Padding="8,3"
+                    IsVisible="False">
+                <TextBlock Text="⚠ BepInEx 未安装"
+                           FontSize="11"
+                           Foreground="#e67e22" />
             </Border>
-        </Grid>
-    </Border>
-</Window>
+        </StackPanel>
+    </suki:SukiWindow.LogoContent>
+
+    <!-- 标题栏右侧：启动游戏按钮（SukiUI Flat 样式，始终可见） -->
+    <suki:SukiWindow.RightWindowTitleBarControls>
+        <Button Classes="Flat"
+                Content="启动游戏"
+                FontSize="11"
+                Padding="8,3"
+                x:Name="BtnPlayCompact" />
+    </suki:SukiWindow.RightWindowTitleBarControls>
+
+    <!-- 主内容区 -->
+    <Grid Background="#FF1a1a1a">
+        <!-- SukiSideMenu — 导航栏 + 内容区 -->
+        <suki:SukiSideMenu>
+            <suki:SukiSideMenu.Items>
+                <suki:SukiSideMenuItem Header="模组管理"
+                                       Classes="Compact"
+                                       x:Name="SideMenuMods"
+                                       Foreground="#999999">
+                    <suki:SukiSideMenuItem.Icon>
+                        <TextBlock Text="📦" FontSize="20" />
+                    </suki:SukiSideMenuItem.Icon>
+                    <suki:SukiSideMenuItem.PageContent>
+                        <local:ModsPage />
+                    </suki:SukiSideMenuItem.PageContent>
+                </suki:SukiSideMenuItem>
+
+                <suki:SukiSideMenuItem Header="游戏资讯"
+                                       Classes="Compact"
+                                       x:Name="SideMenuNews"
+                                       Foreground="#999999">
+                    <suki:SukiSideMenuItem.Icon>
+                        <TextBlock Text="📰" FontSize="20" />
+                    </suki:SukiSideMenuItem.Icon>
+                    <suki:SukiSideMenuItem.PageContent>
+                        <local:NewsPage />
+                    </suki:SukiSideMenuItem.PageContent>
+                </suki:SukiSideMenuItem>
+
+                <suki:SukiSideMenuItem Header="设置"
+                                       Classes="Compact"
+                                       x:Name="SideMenuSettings"
+                                       Foreground="#999999">
+                    <suki:SukiSideMenuItem.Icon>
+                        <TextBlock Text="⚙" FontSize="20" />
+                    </suki:SukiSideMenuItem.Icon>
+                    <suki:SukiSideMenuItem.PageContent>
+                        <local:SettingsPage />
+                    </suki:SukiSideMenuItem.PageContent>
+                </suki:SukiSideMenuItem>
+
+                <suki:SukiSideMenuItem Header="关于"
+                                       Classes="Compact"
+                                       x:Name="SideMenuAbout"
+                                       Foreground="#999999">
+                    <suki:SukiSideMenuItem.Icon>
+                        <TextBlock Text="ℹ" FontSize="20" />
+                    </suki:SukiSideMenuItem.Icon>
+                    <suki:SukiSideMenuItem.PageContent>
+                        <local:AboutPage />
+                    </suki:SukiSideMenuItem.PageContent>
+                </suki:SukiSideMenuItem>
+            </suki:SukiSideMenu.Items>
+        </suki:SukiSideMenu>
+
+        <!-- ══════ 窗口级拖放遮罩 ══════ -->
+        <Border Name="WindowDropOverlay"
+                Background="#aa000000"
+                IsVisible="False"
+                IsHitTestVisible="False"
+                ZIndex="200">
+            <Border BorderBrush="#e67e22"
+                    BorderThickness="2"
+                    CornerRadius="8"
+                    Background="#1a1a1a"
+                    VerticalAlignment="Center"
+                    HorizontalAlignment="Center"
+                    Padding="50,35">
+                <StackPanel Spacing="12" HorizontalAlignment="Center">
+                    <TextBlock Text="📦 释放以安装模组"
+                               FontSize="22"
+                               Foreground="#e67e22"
+                               HorizontalAlignment="Center" />
+                    <TextBlock Name="WindowDropFileName"
+                               FontSize="14"
+                               Foreground="#aaa"
+                               HorizontalAlignment="Center" />
+                </StackPanel>
+            </Border>
+        </Border>
+    </Grid>
+</suki:SukiWindow>

@@ -32,7 +32,7 @@
                     Opacity="0.3" />
 
             <!-- 描述 -->
-            <TextBlock Text="一个简洁的游戏模组启动器，支持 BepInEx 模组管理、配置编辑和 Steam 资讯浏览。"
+            <TextBlock Text="教人装模组教疾苦搞出来的神人玩意"
                        FontSize="13"
                        Foreground="#aaa"
                        TextWrapping="Wrap"
@@ -54,8 +54,6 @@
                 <TextBlock Text="⚙ 配置编辑 — 可视化编辑 BepInEx 配置文件"
                            FontSize="12" Foreground="#888" HorizontalAlignment="Center" />
                 <TextBlock Text="📰 游戏资讯 — 自动获取 Steam 最新动态"
-                           FontSize="12" Foreground="#888" HorizontalAlignment="Center" />
-                <TextBlock Text="🎮 游戏启动 — 一键启动游戏（Steam / 本地路径）"
                            FontSize="12" Foreground="#888" HorizontalAlignment="Center" />
                 <TextBlock Text="🔄 拖放安装 — 拖拽 DLL 或压缩包即可安装模组"
                            FontSize="12" Foreground="#888" HorizontalAlignment="Center" />

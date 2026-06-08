@@ -28,11 +28,7 @@
                  Watermark="搜索设置…"
                  FontSize="13"
                  Padding="8,5"
-                 Margin="0,0,0,8"
-                 Background="#1a1a1a"
-                 Foreground="{StaticResource TextPrimaryBrush}"
-                 BorderBrush="{StaticResource BorderBrush}"
-                 BorderThickness="1" />
+                 Margin="0,0,0,8" />
 
         <!-- 游戏路径 -->
         <Grid Grid.Row="2" Margin="0,0,0,12" ColumnDefinitions="100,*,Auto"
@@ -46,7 +42,8 @@
                      Padding="5"
                      Margin="0,0,5,0"
                      Text="{Binding GamePath, Source={x:Static services:AppConfig.Instance}, Mode=TwoWay}" />
-            <Button Grid.Column="2"
+            <Button Classes="Flat"
+                    Grid.Column="2"
                     Content="浏览…"
                     Padding="10,5"
                     Click="OnBrowseClick" />
@@ -140,11 +137,11 @@
         <!-- 清除缓存 -->
         <StackPanel Grid.Row="9" Orientation="Horizontal" Spacing="15" Margin="0,10,0,0"
                     Name="SettingsCacheRow">
-            <Button Name="BtnClearCache"
+            <Button Classes="Flat"
+                    Name="BtnClearCache"
                     Content="🗑 清除资讯缓存"
                     Padding="15,8"
                     FontSize="13"
-                    Cursor="Hand"
                     Click="OnClearCacheClick" />
             <TextBlock Text="删除本地缓存的 Steam 资讯文件，下次打开资讯页时将重新拉取"
                        Foreground="{StaticResource TextSecondaryBrush}"

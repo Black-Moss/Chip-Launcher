@@ -1,21 +1,15 @@
 using Avalonia;
+using System;
 
 namespace ChipLauncher;
 
 internal static class Program
 {
     [STAThread]
-    public static void Main(string[] args)
-    {
-        BuildAvaloniaApp()
-            .StartWithClassicDesktopLifetime(args);
-    }
+    public static void Main(string[] args) => BuildAvaloniaApp().StartWithClassicDesktopLifetime(args);
 
     private static AppBuilder BuildAvaloniaApp()
-    {
-        return AppBuilder.Configure<App>()
+        => AppBuilder.Configure<App>()
             .UsePlatformDetect()
-            .WithInterFont()
             .LogToTrace();
-    }
 }
