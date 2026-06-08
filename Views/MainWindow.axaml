@@ -104,52 +104,69 @@
             <!-- 左侧导航栏 -->
             <Border Grid.Row="1" Grid.Column="0"
                     Background="#000000">
-                <StackPanel>
+                <Grid RowDefinitions="*,Auto">
+                    <!-- 页面导航按钮（顶部） -->
+                    <StackPanel>
+                        <Border Name="BtnMods"
+                                Background="Transparent"
+                                Padding="15,12"
+                                Margin="0,2"
+                                Cursor="Hand"
+                                PointerEntered="NavItemPointerEnter"
+                                PointerExited="NavItemPointerLeave">
+                            <TextBlock Text="📦 模组管理"
+                                       FontSize="15"
+                                       Foreground="#CCCCCC"
+                                       TextAlignment="Center"
+                                       HorizontalAlignment="Stretch" />
+                        </Border>
+                        <Border Name="BtnNews"
+                                Background="Transparent"
+                                Padding="15,12"
+                                Margin="0,2"
+                                Cursor="Hand"
+                                PointerEntered="NavItemPointerEnter"
+                                PointerExited="NavItemPointerLeave">
+                            <TextBlock Text="📰 游戏资讯"
+                                       FontSize="15"
+                                       Foreground="#CCCCCC"
+                                       TextAlignment="Center"
+                                       HorizontalAlignment="Stretch" />
+                        </Border>
+                        <Border Name="BtnSettings"
+                                Background="Transparent"
+                                Padding="15,12"
+                                Margin="0,2"
+                                Cursor="Hand"
+                                PointerEntered="NavItemPointerEnter"
+                                PointerExited="NavItemPointerLeave">
+                            <TextBlock Text="⚙ 设置"
+                                       FontSize="15"
+                                       Foreground="#CCCCCC"
+                                       TextAlignment="Center"
+                                       HorizontalAlignment="Stretch" />
+                        </Border>
+                    </StackPanel>
+
+                    <!-- 启动游戏按钮（底部）：白圆角边框，与侧边/底边距离一致 -->
                     <Border Name="BtnPlay"
+                            Grid.Row="1"
                             Background="Transparent"
                             Padding="15,12"
-                            Margin="0,2"
-                            Cursor="Hand">
+                            Margin="12,2,12,12"
+                            Cursor="Hand"
+                            CornerRadius="6"
+                            BorderBrush="White"
+                            BorderThickness="1"
+                            PointerEntered="NavItemPointerEnter"
+                            PointerExited="NavItemPointerLeave">
                         <TextBlock Text="⏬ 启动游戏"
                                    FontSize="15"
                                    Foreground="#CCCCCC"
                                    TextAlignment="Center"
                                    HorizontalAlignment="Stretch" />
                     </Border>
-                    <Border Name="BtnMods"
-                            Background="Transparent"
-                            Padding="15,12"
-                            Margin="0,2"
-                            Cursor="Hand">
-                        <TextBlock Text="📦 模组管理"
-                                   FontSize="15"
-                                   Foreground="#CCCCCC"
-                                   TextAlignment="Center"
-                                   HorizontalAlignment="Stretch" />
-                    </Border>
-                    <Border Name="BtnNews"
-                            Background="Transparent"
-                            Padding="15,12"
-                            Margin="0,2"
-                            Cursor="Hand">
-                        <TextBlock Text="📰 游戏资讯"
-                                   FontSize="15"
-                                   Foreground="#CCCCCC"
-                                   TextAlignment="Center"
-                                   HorizontalAlignment="Stretch" />
-                    </Border>
-                    <Border Name="BtnSettings"
-                            Background="Transparent"
-                            Padding="15,12"
-                            Margin="0,2"
-                            Cursor="Hand">
-                        <TextBlock Text="⚙ 设置"
-                                   FontSize="15"
-                                   Foreground="#CCCCCC"
-                                   TextAlignment="Center"
-                                   HorizontalAlignment="Stretch" />
-                    </Border>
-                </StackPanel>
+                </Grid>
             </Border>
 
             <!-- 右侧内容区 -->

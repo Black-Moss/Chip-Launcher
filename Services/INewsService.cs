@@ -8,5 +8,5 @@ namespace ChipLauncher.Services;
 public interface INewsService
 {
     /// <summary>获取资讯列表，失败返回 null</summary>
-    Task<List<NewsItem>?> GetNewsAsync(string appId);
+    Task<List<NewsItem>?> GetNewsAsync();
 }

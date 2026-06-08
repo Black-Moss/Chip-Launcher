@@ -51,7 +51,7 @@ public partial class NewsPage : UserControl
     /// <summary>页面加载时：优先使用缓存，无缓存则发起请求</summary>
     private async Task OnPageLoadedAsync()
     {
-        var cached = NewsService.TryGetCached("4576490");
+        var cached = NewsService.TryGetCached();
         if (cached != null)
         {
             BindNews(cached);
@@ -67,7 +67,7 @@ public partial class NewsPage : UserControl
         ShowOverlay(LoadingOverlay, true);
         ShowOverlay(ErrorOverlay, false);
 
-        var result = await _newsService.GetNewsAsync("4576490");
+        var result = await _newsService.GetNewsAsync();
 
         ShowOverlay(LoadingOverlay, false);
 

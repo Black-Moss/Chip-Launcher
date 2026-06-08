@@ -235,7 +235,7 @@ public partial class MainWindow : Window
     private static async Task PrefetchNewsAsync()
     {
         var newsService = new NewsService();
-        var result = await newsService.GetNewsAsync("4576490");
+        var result = await newsService.GetNewsAsync();
         if (result != null)
             Logger.Info($"启动预取资讯成功: {result.Count} 条");
         else
@@ -346,6 +346,33 @@ public partial class MainWindow : Window
         HighlightNav(page);
     }
 
+    // ── 导航栏统一样式 ──────────────────────────────────────────
+
+    private static readonly Brush NavHoverBg = new SolidColorBrush(Color.FromRgb(42, 42, 42));     // 鼠标悬浮：灰背景
+    private static readonly Brush NavSelectedBg = new SolidColorBrush(Color.FromRgb(51, 51, 51));   // 选中：淡灰背景
+    private static readonly Brush NavNormalBg = new SolidColorBrush(Colors.Transparent);             // 普通：透明背景
+    private static readonly Brush NavSelectedText = new SolidColorBrush(Colors.White);
+    private static readonly Brush NavNormalText = new SolidColorBrush(Color.FromRgb(204, 204, 204));
+
+    /// <summary>导航栏鼠标进入 → 灰色背景</summary>
+    private void NavItemPointerEnter(object? sender, PointerEventArgs e)
+    {
+        if (sender is Border border)
+            border.Background = NavHoverBg;
+    }
+
+    /// <summary>导航栏鼠标离开 → 恢复（选中项保持淡灰）</summary>
+    private void NavItemPointerLeave(object? sender, PointerEventArgs e)
+    {
+        if (sender is not Border border) return;
+
+        var isSelected = (border == BtnMods && _currentNav == "Mods")
+                      || (border == BtnNews && _currentNav == "News")
+                      || (border == BtnSettings && _currentNav == "Settings");
+
+        border.Background = isSelected ? NavSelectedBg : NavNormalBg;
+    }
+
     /// <summary>更新导航栏高亮状态</summary>
     private void HighlightNav(string? page)
     {
@@ -365,17 +392,17 @@ public partial class MainWindow : Window
         };
 
         if (target == null) return;
-        target.Background = new SolidColorBrush(Color.FromRgb(51, 51, 51));
+        target.Background = NavSelectedBg;
         if (target.Child is TextBlock tb)
-            tb.Foreground = new SolidColorBrush(Colors.White);
+            tb.Foreground = NavSelectedText;
     }
 
     /// <summary>将导航按钮重置为默认样式</summary>
     private static void ResetNavStyle(Border border)
     {
-        border.Background = new SolidColorBrush(Colors.Transparent);
+        border.Background = NavNormalBg;
         if (border.Child is TextBlock tb)
-            tb.Foreground = new SolidColorBrush(Color.FromRgb(204, 204, 204));
+            tb.Foreground = NavNormalText;
     }
 
     // ===== 游戏启动 =====

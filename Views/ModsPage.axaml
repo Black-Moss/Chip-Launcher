@@ -24,21 +24,21 @@
                      KeyDown="OnModSearchKeyDown" />
 
             <!-- 工具按钮：安装本地模组 / 打开模组文件夹 / 打开配置文件夹 -->
-            <StackPanel Grid.Row="2" Orientation="Horizontal" Spacing="6" Margin="0,0,0,6">
+            <StackPanel Grid.Row="2" Orientation="Horizontal" Spacing="6" Margin="0,0,0,6" HorizontalAlignment="Center">
                 <Button Name="BtnInstallLocal"
-                        Content="📦 安装本地模组"
+                        Content="安装本地模组"
                         Padding="10,5"
                         FontSize="11"
                         Cursor="Hand"
                         Click="OnInstallLocalClick" />
                 <Button Name="BtnOpenModFolder"
-                        Content="📂 打开模组文件夹"
+                        Content="模组文件夹"
                         Padding="10,5"
                         FontSize="11"
                         Cursor="Hand"
                         Click="OnOpenModFolderClick" />
                 <Button Name="BtnOpenConfigFolder"
-                        Content="⚙ 打开配置文件夹"
+                        Content="配置文件夹"
                         Padding="10,5"
                         FontSize="11"
                         Cursor="Hand"
@@ -134,7 +134,7 @@
 
             <TextBlock Name="EmptyHint"
                        Grid.Row="4"
-                       Text="未找到 BepInEx 模组&#x0a;请确保游戏已安装 BepInEx&#x0a;且模组位于 BepInEx\plugins 目录"
+                       Text="未找到 BepInEx 模组&#x0a;请确保模组位于 BepInEx\plugins 目录"
                        FontSize="13"
                        Foreground="#888"
                        VerticalAlignment="Center"
