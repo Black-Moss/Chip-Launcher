@@ -12,9 +12,9 @@ namespace ChipLauncher.Views;
 public partial class NewsPage : UserControl
 {
     private readonly INewsService _newsService;
+    private List<NewsItem>? _allNews;
     private string _currentUrl = string.Empty;
     private bool _selectionHooked;
-    private List<NewsItem>? _allNews;
 
     public NewsPage()
     {
@@ -43,7 +43,7 @@ public partial class NewsPage : UserControl
 
         var filtered = _allNews
             .Where(n => n.Title.Contains(keyword, StringComparison.OrdinalIgnoreCase)
-                     || n.Content.Contains(keyword, StringComparison.OrdinalIgnoreCase))
+                        || n.Content.Contains(keyword, StringComparison.OrdinalIgnoreCase))
             .ToList();
         NewsListBox.ItemsSource = filtered;
     }
@@ -94,7 +94,7 @@ public partial class NewsPage : UserControl
         {
             var filtered = items
                 .Where(n => n.Title.Contains(keyword, StringComparison.OrdinalIgnoreCase)
-                         || n.Content.Contains(keyword, StringComparison.OrdinalIgnoreCase))
+                            || n.Content.Contains(keyword, StringComparison.OrdinalIgnoreCase))
                 .ToList();
             NewsListBox.ItemsSource = filtered;
         }

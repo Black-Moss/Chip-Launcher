@@ -2,7 +2,7 @@ using Avalonia;
 
 namespace ChipLauncher;
 
-internal sealed class Program
+internal static class Program
 {
     [STAThread]
     public static void Main(string[] args)
@@ -11,7 +11,7 @@ internal sealed class Program
             .StartWithClassicDesktopLifetime(args);
     }
 
-    public static AppBuilder BuildAvaloniaApp()
+    private static AppBuilder BuildAvaloniaApp()
     {
         return AppBuilder.Configure<App>()
             .UsePlatformDetect()

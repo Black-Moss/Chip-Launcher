@@ -53,7 +53,7 @@ public partial class MainWindow : Window
             "Settings" => new SettingsPage(),
             _ => new NewsPage()
         };
-        HighlightNav(defaultPage == "Mods" ? "Mods" : defaultPage == "Settings" ? "Settings" : "News");
+        HighlightNav(defaultPage);
 
         // 窗口控制按钮
         BtnMinimize.Click += (_, _) => WindowState = WindowState.Minimized;
@@ -227,12 +227,10 @@ public partial class MainWindow : Window
             _ => null
         };
 
-        if (target != null)
-        {
-            target.Background = new SolidColorBrush(Color.FromRgb(51, 51, 51));
-            if (target.Child is TextBlock tb)
-                tb.Foreground = new SolidColorBrush(Colors.White);
-        }
+        if (target == null) return;
+        target.Background = new SolidColorBrush(Color.FromRgb(51, 51, 51));
+        if (target.Child is TextBlock tb)
+            tb.Foreground = new SolidColorBrush(Colors.White);
     }
 
     /// <summary>将导航按钮重置为默认样式</summary>

@@ -10,15 +10,9 @@
             <TextBlock Text="模组管理"
                        Classes="PageTitle" />
 
-            <TextBlock Grid.Row="1"
-                       Text="已安装的模组"
-                       FontSize="13"
-                       Foreground="#888"
-                       Margin="0,2,0,4" />
-
             <!-- 搜索框 -->
             <TextBox Name="ModSearchBox"
-                     Grid.Row="2"
+                     Grid.Row="1"
                      Watermark="搜索模组…"
                      FontSize="13"
                      Padding="8,5"
@@ -27,10 +21,10 @@
                      Foreground="{StaticResource TextPrimaryBrush}"
                      BorderBrush="{StaticResource BorderBrush}"
                      BorderThickness="1"
-                     />
+                     KeyDown="OnModSearchKeyDown" />
 
             <ListBox Name="ModListBox"
-                     Grid.Row="3"
+                     Grid.Row="2"
                      Background="Transparent"
                      BorderThickness="0"
                      ScrollViewer.HorizontalScrollBarVisibility="Disabled"

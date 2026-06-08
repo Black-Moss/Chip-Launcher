@@ -1,6 +1,8 @@
+using System.Diagnostics;
 using System.Globalization;
 using Avalonia.Controls;
 using Avalonia.Data.Converters;
+using Avalonia.Input;
 using Avalonia.Interactivity;
 using Avalonia.Media;
 using ChipLauncher.Models;
@@ -49,41 +51,35 @@ public partial class ModsPage : UserControl
         b => b ? "true" : "false"
     );
 
+    private const string DefaultEmptyHint =
+        "未找到 BepInEx 模组\n请确保游戏已安装 BepInEx\n且模组位于 BepInEx\\plugins 目录";
+
+    private const string SearchNoResultHint =
+        "未找到匹配模组，按 Enter 在 NexusMods 网页中搜索";
+
+    private List<ModInfo>? _allMods;
+
     private BepInExConfig? _currentConfig;
 
     // ── 字段 ──────────────────────────────────────────────────
 
     private string? _gameDir;
-    private List<ModInfo>? _allMods;
 
     // ── 页面逻辑 ──────────────────────────────────────────────
 
     public ModsPage()
     {
         InitializeComponent();
-        Loaded += (_, _) => LoadMods();
+        Loaded += OnPageLoaded;
         ModSearchBox.TextChanged += OnModSearchChanged;
     }
 
-    /// <summary>搜索框文本变化 → 过滤模组列表</summary>
-    private void OnModSearchChanged(object? sender, TextChangedEventArgs e)
+    private void OnPageLoaded(object? sender, EventArgs e)
     {
-        if (_allMods == null) return;
-
-        var keyword = ModSearchBox.Text?.Trim();
-        if (string.IsNullOrEmpty(keyword))
-        {
-            ModListBox.ItemsSource = _allMods;
-            return;
-        }
-
-        var filtered = _allMods
-            .Where(m => m.Name.Contains(keyword, StringComparison.OrdinalIgnoreCase))
-            .ToList();
-        ModListBox.ItemsSource = filtered;
-        ModListBox.IsVisible = filtered.Count > 0;
-        EmptyHint.IsVisible = filtered.Count == 0;
+        LoadMods();
     }
+
+    // ===== 本地模组管理 =====
 
     /// <summary>扫描 BepInEx\plugins 子目录加载模组列表</summary>
     private void LoadMods()
@@ -142,7 +138,9 @@ public partial class ModsPage : UserControl
             {
                 ModListBox.ItemsSource = mods;
                 ModListBox.IsVisible = mods.Count > 0;
+                EmptyHint.Text = DefaultEmptyHint;
                 EmptyHint.IsVisible = mods.Count == 0;
+                EmptyHint.Foreground = new SolidColorBrush(Color.Parse("#888888"));
             }
             else
             {
@@ -151,7 +149,9 @@ public partial class ModsPage : UserControl
                     .ToList();
                 ModListBox.ItemsSource = filtered;
                 ModListBox.IsVisible = filtered.Count > 0;
+                EmptyHint.Text = SearchNoResultHint;
                 EmptyHint.IsVisible = filtered.Count == 0;
+                EmptyHint.Foreground = new SolidColorBrush(Color.Parse("#e67e22"));
             }
         }
         catch (Exception ex)
@@ -160,149 +160,170 @@ public partial class ModsPage : UserControl
         }
     }
 
+    /// <summary>搜索框文本变化 → 过滤模组列表，并控制提示文字</summary>
+    private void OnModSearchChanged(object? sender, TextChangedEventArgs e)
+    {
+        if (_allMods == null) return;
+
+        var keyword = ModSearchBox.Text?.Trim();
+        if (string.IsNullOrEmpty(keyword))
+        {
+            ModListBox.ItemsSource = _allMods;
+            EmptyHint.Text = DefaultEmptyHint;
+            EmptyHint.Foreground = new SolidColorBrush(Color.Parse("#888888"));
+            return;
+        }
+
+        var filtered = _allMods
+            .Where(m => m.Name.Contains(keyword, StringComparison.OrdinalIgnoreCase))
+            .ToList();
+        ModListBox.ItemsSource = filtered;
+        ModListBox.IsVisible = filtered.Count > 0;
+        EmptyHint.Text = SearchNoResultHint;
+        EmptyHint.IsVisible = filtered.Count == 0;
+        EmptyHint.Foreground = new SolidColorBrush(Color.Parse("#e67e22"));
+    }
+
+    /// <summary>搜索框按键 → Enter 时打开 NexusMods 网页搜索</summary>
+    private void OnModSearchKeyDown(object? sender, KeyEventArgs e)
+    {
+        if (e.Key != Key.Enter) return;
+
+        var keyword = ModSearchBox.Text?.Trim();
+        if (string.IsNullOrEmpty(keyword)) return;
+
+        var domain = AppConfig.Instance.NexusModsGameDomain;
+        if (string.IsNullOrEmpty(domain)) return;
+
+        var url = $"https://www.nexusmods.com/games/{domain}/search?keyword={Uri.EscapeDataString(keyword)}";
+        Process.Start(new ProcessStartInfo(url) { UseShellExecute = true });
+    }
+
     /// <summary>切换模组启用/禁用</summary>
     private async void OnToggleClick(object? sender, RoutedEventArgs e)
     {
         if (sender is not Button button || button.Tag is not ModInfo mod) return;
 
+        var pluginFile = mod.PluginFilePath;
+
         try
         {
-            var oldFile = mod.PluginFilePath;
-            string newFile;
+            if (File.Exists(pluginFile))
+            {
+                // .dll -> .disabled
+                var disabledPath = pluginFile + ".disabled";
+                File.Move(pluginFile, disabledPath);
+                mod.PluginFilePath = disabledPath;
+                mod.IsEnabled = false;
+            }
+            else if (File.Exists(pluginFile + ".disabled"))
+            {
+                // .disabled -> .dll
+                var dllPath = pluginFile.Replace(".disabled", "");
+                File.Move(pluginFile, dllPath);
+                mod.PluginFilePath = dllPath;
+                mod.IsEnabled = true;
+            }
 
-            if (mod.IsEnabled)
-                newFile = Path.ChangeExtension(oldFile, ".disabled");
-            else
-                newFile = Path.ChangeExtension(oldFile, ".dll");
+            // 刷新列表显示
+            var list = ModListBox.ItemsSource as List<ModInfo>;
+            if (list != null)
+            {
+                var idx = list.IndexOf(mod);
+                if (idx >= 0)
+                {
+                    list[idx] = mod; // 触发 UI 更新
+                    ModListBox.ItemsSource = null;
+                    ModListBox.ItemsSource = list;
+                }
+            }
 
-            File.Move(oldFile, newFile, true);
-            Logger.Info($"模组 {(mod.IsEnabled ? "禁用" : "启用")}: {mod.Name}");
-
-            // 清除右侧配置（避免选中项漂移）
             ClearConfigPanel();
-            LoadMods();
         }
         catch (Exception ex)
         {
-            Logger.Error($"切换模组状态失败: {ex.Message}");
             ShowError($"切换失败：{ex.Message}");
         }
     }
 
-    /// <summary>选中模组 → 加载对应的配置文件</summary>
     private void OnModSelected(object? sender, SelectionChangedEventArgs e)
     {
-        if (e.AddedItems.Count == 0) return;
-        if (e.AddedItems[0] is not ModInfo mod) return;
+        if (e.AddedItems.Count == 0 || e.AddedItems[0] is not ModInfo mod)
+        {
+            ClearConfigPanel();
+            return;
+        }
 
         LoadConfigForMod(mod);
     }
 
-    /// <summary>查找并加载选定模组的配置文件</summary>
+    /// <summary>加载选中模组的 BepInEx 配置</summary>
     private void LoadConfigForMod(ModInfo mod)
     {
-        if (string.IsNullOrEmpty(_gameDir)) return;
-
-        var configDir = Path.Combine(_gameDir, "BepInEx", "config");
-        if (!Directory.Exists(configDir))
+        var cfgDir = Path.Combine(mod.DirectoryPath, "config");
+        if (!Directory.Exists(cfgDir))
         {
-            ShowConfigUnavailable("未找到 BepInEx\\config 目录");
+            ShowConfigUnavailable("此模组没有配置文件。");
             return;
         }
 
-        // 扫描 config 目录下所有 .cfg 文件
-        var cfgFiles = Directory.GetFiles(configDir, "*.cfg");
+        var cfgFiles = Directory.GetFiles(cfgDir, "*.cfg");
         if (cfgFiles.Length == 0)
         {
-            ShowConfigUnavailable("未找到任何配置文件");
+            ShowConfigUnavailable("此模组没有配置文件。");
             return;
         }
 
-        // 尝试匹配：找文件名包含模组名的 cfg 文件
-        var modNameNormalized = mod.Name.Replace(" ", "").Replace("-", "").Replace("_", "")
-            .ToLowerInvariant();
-
-        var matchedFile = cfgFiles.FirstOrDefault(cfg =>
+        var cfg = BepInExConfig.Load(cfgFiles[0]);
+        if (cfg == null)
         {
-            var cfgName = Path.GetFileNameWithoutExtension(cfg)
-                .Replace(" ", "").Replace("-", "").Replace("_", "")
-                .ToLowerInvariant();
-            return cfgName.Contains(modNameNormalized) || modNameNormalized.Contains(cfgName);
-        });
-
-        if (matchedFile == null)
-        {
-            ShowConfigUnavailable("此模组没有配置文件");
+            ShowConfigUnavailable("无法解析配置文件。");
             return;
         }
 
-        var config = BepInExConfig.Load(matchedFile);
-        if (config == null)
-        {
-            ShowConfigUnavailable($"无法读取配置文件\n{Path.GetFileName(matchedFile)}");
-            return;
-        }
-
-        _currentConfig = config;
-        ShowConfigPanel(config);
+        _currentConfig = cfg;
+        ConfigFileName.Text = cfg.FileName;
+        ConfigDescription.Text = cfg.ModDescription;
+        ConfigItemsControl.ItemsSource = cfg.Entries;
+        ConfigPanel.IsVisible = true;
+        NoSelectionHint.IsVisible = false;
     }
 
-    /// <summary>显示配置编辑器</summary>
     private void ShowConfigPanel(BepInExConfig config)
     {
-        ConfigFileName.Text = config.FileName;
-        ConfigDescription.Text = config.Entries.Count > 0
-            ? $"共 {config.Entries.Count} 个设置项"
-            : "此配置文件没有可编辑的设置项";
-
+        _currentConfig = config;
         ConfigItemsControl.ItemsSource = config.Entries;
-        BtnSaveConfig.IsVisible = config.Entries.Count > 0;
-        SaveStatus.IsVisible = false;
         ConfigPanel.IsVisible = true;
         NoSelectionHint.IsVisible = false;
     }
 
-    /// <summary>显示"配置不可用"提示（隐藏保存按钮和编辑区）</summary>
     private void ShowConfigUnavailable(string reason)
     {
-        _currentConfig = null;
-        ConfigFileName.Text = reason;
-        ConfigDescription.Text = string.Empty;
-        ConfigItemsControl.ItemsSource = null;
-        BtnSaveConfig.IsVisible = false;
-        SaveStatus.IsVisible = false;
+        ClearConfigPanel();
+
+        ConfigFileName.Text = "";
+        ConfigDescription.Text = reason;
         ConfigPanel.IsVisible = true;
         NoSelectionHint.IsVisible = false;
     }
 
-    /// <summary>清空配置面板</summary>
     private void ClearConfigPanel()
     {
-        _currentConfig = null;
         ConfigPanel.IsVisible = false;
         NoSelectionHint.IsVisible = true;
+        _currentConfig = null;
     }
 
-    /// <summary>保存当前配置</summary>
     private async void OnSaveConfigClick(object? sender, RoutedEventArgs e)
     {
         if (_currentConfig == null) return;
 
-        if (_currentConfig.Save())
-        {
-            SaveStatus.Text = "✅ 配置已保存";
-            SaveStatus.IsVisible = true;
+        var ok = _currentConfig.Save();
+        SaveStatus.Text = ok ? "✅ 已保存" : "❌ 保存失败";
+        SaveStatus.IsVisible = true;
 
-            // 3 秒后隐藏提示
-            await Task.Delay(3000);
-            SaveStatus.IsVisible = false;
-        }
-        else
-        {
-            SaveStatus.Text = "❌ 保存失败";
-            SaveStatus.Foreground = new SolidColorBrush(Color.Parse("#e74c3c"));
-            SaveStatus.IsVisible = true;
-        }
+        await Task.Delay(2000);
+        SaveStatus.IsVisible = false;
     }
 
     private void ShowError(string message)
@@ -314,15 +335,13 @@ public partial class ModsPage : UserControl
     }
 }
 
-/// <summary>
-///     简单的 FuncConverter，将 Lambda 转换为 IValueConverter
-/// </summary>
+/// <summary>双向值转换器辅助类</summary>
 public class FuncConverter<TIn, TOut> : IValueConverter
 {
-    private readonly Func<TIn, TOut> _convert;
-    private readonly Func<TOut, TIn>? _convertBack;
+    private readonly Func<TIn?, TOut?> _convert;
+    private readonly Func<TOut?, TIn?>? _convertBack;
 
-    public FuncConverter(Func<TIn, TOut> convert, Func<TOut, TIn>? convertBack = null)
+    public FuncConverter(Func<TIn?, TOut?> convert, Func<TOut?, TIn?>? convertBack = null)
     {
         _convert = convert;
         _convertBack = convertBack;
@@ -330,15 +349,14 @@ public class FuncConverter<TIn, TOut> : IValueConverter
 
     public object? Convert(object? value, Type targetType, object? parameter, CultureInfo culture)
     {
-        if (value is TIn input)
-            return _convert(input);
-        return default(TOut);
+        return value is TIn tIn ? _convert(tIn) : _convert(default);
     }
 
     public object? ConvertBack(object? value, Type targetType, object? parameter, CultureInfo culture)
     {
-        if (_convertBack != null && value is TOut input)
-            return _convertBack(input);
-        throw new NotSupportedException();
+        if (_convertBack == null)
+            throw new NotSupportedException();
+
+        return value is TOut tOut ? _convertBack(tOut) : _convertBack(default);
     }
 }

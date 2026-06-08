@@ -24,6 +24,7 @@ public class AppConfig : INotifyPropertyChanged
     private string? _gamePath;
 
     private int _maxRetries = 5;
+    private string _nexusModsGameDomain = "scavprototype";
 
     // ── 防抖保存 ──────────────────────────────────────────────
 
@@ -97,20 +98,33 @@ public class AppConfig : INotifyPropertyChanged
         }
     }
 
-    /// <summary>ComboBox 绑定的索引（0=News, 1=Mods, 2=Settings），不序列化</summary>
+    /// <summary>ComboBox 绑定的索引（0=News, 1=Mods, 2=ModDownload, 3=Settings），不序列化</summary>
     [JsonIgnore]
     public int DefaultPageIndex
     {
         get
         {
-            var pages = new[] { "News", "Mods", "Settings" };
+            var pages = new[] { "News", "Mods", "ModDownload", "Settings" };
             return Math.Max(0, Array.IndexOf(pages, _defaultPage));
         }
         set
         {
-            var pages = new[] { "News", "Mods", "Settings" };
+            var pages = new[] { "News", "Mods", "ModDownload", "Settings" };
             if (value >= 0 && value < pages.Length)
                 DefaultPage = pages[value];
+        }
+    }
+
+    /// <summary>NexusMods 游戏域名（如 scavprototype）</summary>
+    public string NexusModsGameDomain
+    {
+        get => _nexusModsGameDomain;
+        set
+        {
+            if (_nexusModsGameDomain == value) return;
+            _nexusModsGameDomain = value;
+            OnPropertyChanged();
+            Save();
         }
     }
 

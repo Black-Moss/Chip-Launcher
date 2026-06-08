@@ -34,8 +34,7 @@
                              Background="#1a1a1a"
                              Foreground="{StaticResource TextPrimaryBrush}"
                              BorderBrush="{StaticResource BorderBrush}"
-                             BorderThickness="1"
-                             />
+                             BorderThickness="1" />
                     <ListBox Name="NewsListBox"
                              Grid.Row="2"
                              Background="Transparent"
@@ -85,21 +84,21 @@
                 <Grid Margin="10,0,0,0" RowDefinitions="Auto,Auto,Auto,*">
 
                     <SelectableTextBlock Name="TitleText"
-                               FontSize="18"
-                               FontWeight="Bold"
-                               Foreground="{StaticResource TextPrimaryBrush}"
-                               TextWrapping="Wrap"
-                               Margin="0,0,0,6"
-                               SelectionBrush="#555555"
-                               SelectionForegroundBrush="White" />
+                                         FontSize="18"
+                                         FontWeight="Bold"
+                                         Foreground="{StaticResource TextPrimaryBrush}"
+                                         TextWrapping="Wrap"
+                                         Margin="0,0,0,6"
+                                         SelectionBrush="#555555"
+                                         SelectionForegroundBrush="White" />
 
                     <SelectableTextBlock Name="DateText"
-                               Grid.Row="1"
-                               FontSize="12"
-                               Foreground="{StaticResource TextSecondaryBrush}"
-                               Margin="0,0,0,6"
-                               SelectionBrush="#555555"
-                               SelectionForegroundBrush="White" />
+                                         Grid.Row="1"
+                                         FontSize="12"
+                                         Foreground="{StaticResource TextSecondaryBrush}"
+                                         Margin="0,0,0,6"
+                                         SelectionBrush="#555555"
+                                         SelectionForegroundBrush="White" />
 
                     <!-- 打开原文按钮（日期下方） -->
                     <Button Name="OpenUrlButton"

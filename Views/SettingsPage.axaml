@@ -12,6 +12,8 @@
             <RowDefinition Height="Auto" />
             <RowDefinition Height="Auto" />
             <RowDefinition Height="Auto" />
+            <RowDefinition Height="Auto" />
+            <RowDefinition Height="Auto" />
             <RowDefinition Height="*" />
         </Grid.RowDefinitions>
 
@@ -28,8 +30,7 @@
                  Background="#1a1a1a"
                  Foreground="{StaticResource TextPrimaryBrush}"
                  BorderBrush="{StaticResource BorderBrush}"
-                 BorderThickness="1"
-                 />
+                 BorderThickness="1" />
 
         <!-- 游戏路径 -->
         <Grid Grid.Row="2" Margin="0,0,0,12" ColumnDefinitions="100,*,Auto"
@@ -102,19 +103,40 @@
                       Padding="5,4">
                 <ComboBoxItem Content="📰 游戏资讯" />
                 <ComboBoxItem Content="📦 模组管理" />
+                <ComboBoxItem Content="🌐 模组下载" />
                 <ComboBoxItem Content="⚙ 设置" />
             </ComboBox>
             <TextBlock Grid.Column="2"
-                       Text="(启动时默认显示的页面，0=资讯 1=模组 2=设置)"
+                       Text="(启动时默认显示的页面，0=资讯 1=模组 2=下载 3=设置)"
                        Foreground="{StaticResource TextSecondaryBrush}"
                        FontSize="12"
                        Opacity="0.5"
                        VerticalAlignment="Center"
                        Margin="8,0,0,0" />
         </Grid>
+        
+        <!-- NexusMods 游戏域名 -->
+        <Grid Grid.Row="7" Margin="0,0,0,12" ColumnDefinitions="100,120,*"
+              Name="SettingsNexusDomainRow">
+            <TextBlock Text="NexusMods 域名："
+                       Foreground="{StaticResource TextSecondaryBrush}"
+                       FontSize="14"
+                       VerticalAlignment="Center" />
+            <TextBox Grid.Column="1"
+                     FontSize="14"
+                     Padding="5"
+                     Margin="0,0,5,0"
+                     Text="{Binding NexusModsGameDomain, Source={x:Static services:AppConfig.Instance}, Mode=TwoWay}" />
+            <TextBlock Grid.Column="2"
+                       Text="如 scavprototype"
+                       Foreground="{StaticResource TextSecondaryBrush}"
+                       FontSize="12"
+                       Opacity="0.5"
+                       VerticalAlignment="Center" />
+        </Grid>
 
         <!-- 清除缓存 -->
-        <StackPanel Grid.Row="6" Orientation="Horizontal" Spacing="15" Margin="0,10,0,0"
+        <StackPanel Grid.Row="8" Orientation="Horizontal" Spacing="15" Margin="0,10,0,0"
                     Name="SettingsCacheRow">
             <Button Name="BtnClearCache"
                     Content="🗑 清除资讯缓存"
@@ -130,7 +152,7 @@
         </StackPanel>
 
         <!-- 提示 -->
-        <TextBlock Grid.Row="7"
+        <TextBlock Grid.Row="9"
                    Text="设置修改后自动保存"
                    Foreground="{StaticResource TextSecondaryBrush}"
                    FontSize="13"
