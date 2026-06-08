@@ -51,6 +51,20 @@
                         </ItemsControl.ItemTemplate>
                     </ItemsControl>
 
+                    <!-- BepInEx 安装状态警告 -->
+                    <Border Name="BepInExWarning"
+                            Grid.Column="1"
+                            VerticalAlignment="Center"
+                            Background="#3d1a00"
+                            CornerRadius="4"
+                            Padding="8,3"
+                            IsVisible="False"
+                            Margin="12,0,0,0">
+                        <TextBlock Text="⚠ BepInEx 未安装"
+                                   FontSize="11"
+                                   Foreground="#e67e22" />
+                    </Border>
+
                     <!-- 窗口控制按钮 -->
                     <StackPanel Grid.Column="2"
                                 Orientation="Horizontal"
@@ -142,6 +156,38 @@
             <ContentControl Name="ContentFrame"
                             Grid.Row="1" Grid.Column="1"
                             Background="#000000" />
+
+            <!-- ══════ 全局通知 Toast（支持叠加堆栈 + 渐变消失） ══════ -->
+            <ItemsControl Name="ToastContainer"
+                          Grid.Row="0" Grid.RowSpan="2"
+                          Grid.Column="0" Grid.ColumnSpan="2"
+                          IsHitTestVisible="False"
+                          VerticalAlignment="Top"
+                          HorizontalAlignment="Center"
+                          Margin="0,20,0,0"
+                          ZIndex="300">
+                <ItemsControl.ItemsPanel>
+                    <ItemsPanelTemplate>
+                        <StackPanel HorizontalAlignment="Center" />
+                    </ItemsPanelTemplate>
+                </ItemsControl.ItemsPanel>
+                <ItemsControl.ItemTemplate>
+                    <DataTemplate>
+                        <Border Background="{Binding BackgroundColor}"
+                                CornerRadius="8"
+                                Padding="20,12"
+                                Margin="0,0,0,8"
+                                Opacity="{Binding Opacity}"
+                                MaxWidth="520">
+                            <TextBlock Text="{Binding Message}"
+                                       FontSize="14"
+                                       Foreground="{Binding TextColor}"
+                                       TextWrapping="Wrap"
+                                       HorizontalAlignment="Center" />
+                        </Border>
+                    </DataTemplate>
+                </ItemsControl.ItemTemplate>
+            </ItemsControl>
 
             <!-- ══════ 窗口级拖放遮罩 ══════ -->
             <Border Name="WindowDropOverlay"

@@ -78,6 +78,7 @@ public partial class NewsPage : UserControl
         }
 
         BindNews(result);
+        AppNotification.Show($"已获取 {result.Count} 条资讯", NotificationType.Success);
     }
 
     /// <summary>绑定新闻数据到界面</summary>

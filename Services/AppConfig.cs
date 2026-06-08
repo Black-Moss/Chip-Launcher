@@ -25,7 +25,6 @@ public class AppConfig : INotifyPropertyChanged
 
     private int _maxRetries = 5;
     private bool _confirmModDeletion = true;
-    private string _nexusModsGameDomain = "scavprototype";
 
     // ── 防抖保存 ──────────────────────────────────────────────
 
@@ -124,19 +123,6 @@ public class AppConfig : INotifyPropertyChanged
         {
             if (_confirmModDeletion == value) return;
             _confirmModDeletion = value;
-            OnPropertyChanged();
-            Save();
-        }
-    }
-
-    /// <summary>NexusMods 游戏域名（如 scavprototype）</summary>
-    public string NexusModsGameDomain
-    {
-        get => _nexusModsGameDomain;
-        set
-        {
-            if (_nexusModsGameDomain == value) return;
-            _nexusModsGameDomain = value;
             OnPropertyChanged();
             Save();
         }

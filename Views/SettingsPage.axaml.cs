@@ -33,7 +33,6 @@ public partial class SettingsPage : UserControl
         SettingsRotationRow.IsVisible = MatchSetting(keyword, "轮播间隔", "轮播", "文本", "游戏文本", "切换");
         SettingsStartupRow.IsVisible = MatchSetting(keyword, "启动页面", "启动", "页面", "默认");
         SettingsDeleteConfirmRow.IsVisible = MatchSetting(keyword, "删除确认", "删除", "确认", "二次确认", "Delete", "Confirm");
-        SettingsNexusDomainRow.IsVisible = MatchSetting(keyword, "NexusMods 域名", "域名", "NexusMods", "domain", "游戏域名");
         SettingsCacheRow.IsVisible = MatchSetting(keyword, "清除缓存", "缓存", "清除", "资讯缓存");
     }
 
@@ -52,7 +51,6 @@ public partial class SettingsPage : UserControl
         SettingsRotationRow.IsVisible = true;
         SettingsStartupRow.IsVisible = true;
         SettingsDeleteConfirmRow.IsVisible = true;
-        SettingsNexusDomainRow.IsVisible = true;
         SettingsCacheRow.IsVisible = true;
     }
 

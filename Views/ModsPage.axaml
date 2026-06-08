@@ -2,10 +2,10 @@
              xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
              xmlns:local="using:ChipLauncher.Views"
              x:Class="ChipLauncher.Views.ModsPage">
-    <Grid Margin="15" ColumnDefinitions="300,5,*">
+    <Grid Margin="15" ColumnDefinitions="300,5,*" RowDefinitions="Auto,Auto,Auto,Auto,*">
 
         <!-- ══════ 左侧：模组列表 ══════ -->
-        <Grid RowDefinitions="Auto,Auto,Auto,*">
+        <Grid RowDefinitions="Auto,Auto,Auto,Auto,*">
 
             <TextBlock Text="模组管理"
                        Classes="PageTitle" />
@@ -23,11 +23,67 @@
                      BorderThickness="1"
                      KeyDown="OnModSearchKeyDown" />
 
+            <!-- 工具按钮：安装本地模组 / 打开模组文件夹 / 打开配置文件夹 -->
+            <StackPanel Grid.Row="2" Orientation="Horizontal" Spacing="6" Margin="0,0,0,6">
+                <Button Name="BtnInstallLocal"
+                        Content="📦 安装本地模组"
+                        Padding="10,5"
+                        FontSize="11"
+                        Cursor="Hand"
+                        Click="OnInstallLocalClick" />
+                <Button Name="BtnOpenModFolder"
+                        Content="📂 打开模组文件夹"
+                        Padding="10,5"
+                        FontSize="11"
+                        Cursor="Hand"
+                        Click="OnOpenModFolderClick" />
+                <Button Name="BtnOpenConfigFolder"
+                        Content="⚙ 打开配置文件夹"
+                        Padding="10,5"
+                        FontSize="11"
+                        Cursor="Hand"
+                        Click="OnOpenConfigFolderClick" />
+            </StackPanel>
+
+            <!-- 模组统计 + 批量操作工具栏 -->
+            <StackPanel Grid.Row="3" Margin="0,0,0,6" Spacing="4">
+                <TextBlock Name="ModStatsText"
+                           FontSize="12"
+                           Foreground="#888" />
+                <StackPanel Name="BatchToolbar"
+                            Orientation="Horizontal"
+                            Spacing="6"
+                            IsVisible="False">
+                    <Button Name="BtnBatchEnable"
+                            Content="启用选中"
+                            Padding="8,4"
+                            FontSize="11"
+                            Cursor="Hand"
+                            Click="OnBatchEnableClick" />
+                    <Button Name="BtnBatchDisable"
+                            Content="禁用选中"
+                            Padding="8,4"
+                            FontSize="11"
+                            Cursor="Hand"
+                            Click="OnBatchDisableClick" />
+                    <Button Name="BtnBatchDelete"
+                            Content="🗑 删除选中"
+                            Padding="8,4"
+                            FontSize="11"
+                            Cursor="Hand"
+                            Background="#5c1a1a"
+                            Foreground="#e74c3c"
+                            Click="OnBatchDeleteClick" />
+                </StackPanel>
+            </StackPanel>
+
             <ListBox Name="ModListBox"
-                     Grid.Row="2"
+                     Grid.Row="4"
                      Background="Transparent"
                      BorderThickness="0"
                      ScrollViewer.HorizontalScrollBarVisibility="Disabled"
+                     ScrollViewer.VerticalScrollBarVisibility="Auto"
+                     SelectionMode="Multiple"
                      SelectionChanged="OnModSelected">
                 <ListBox.ItemTemplate>
                     <DataTemplate>
@@ -77,7 +133,7 @@
             </ListBox>
 
             <TextBlock Name="EmptyHint"
-                       Grid.Row="3"
+                       Grid.Row="4"
                        Text="未找到 BepInEx 模组&#x0a;请确保游戏已安装 BepInEx&#x0a;且模组位于 BepInEx\plugins 目录"
                        FontSize="13"
                        Foreground="#888"
@@ -87,7 +143,7 @@
                        IsVisible="False" />
 
             <TextBlock Name="ErrorHint"
-                       Grid.Row="3"
+                       Grid.Row="4"
                        Text=""
                        FontSize="13"
                        Foreground="#e74c3c"
@@ -131,11 +187,6 @@
                         FontSize="13"
                         Cursor="Hand"
                         Click="OnSaveConfigClick" />
-                <TextBlock Name="SaveStatus"
-                           FontSize="12"
-                           Foreground="#4CAF50"
-                           VerticalAlignment="Center"
-                           IsVisible="False" />
                 <Button Name="BtnDeleteMod"
                         Content="🗑 删除模组"
                         Padding="15,8"

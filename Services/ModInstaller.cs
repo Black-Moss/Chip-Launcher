@@ -136,18 +136,14 @@ public class ModInstaller
         var tempDir = Path.Combine(Path.GetTempPath(), "ChipLauncher_" + Guid.NewGuid().ToString("N"));
         try
         {
-            Logger.Info($"开始解压: {archivePath} → {tempDir}");
             await ExtractArchiveAsync(archivePath, tempDir);
 
             // ── 情况 A：根目录有 DLL → 整个压缩包视为一个模组 ──
             var rootDlls = Directory.GetFiles(tempDir, "*.dll", SearchOption.TopDirectoryOnly);
-            Logger.Info($"压缩包根目录 DLL 数量: {rootDlls.Length}");
             if (rootDlls.Length > 0)
             {
                 var rootDll = rootDlls[0];
-                Logger.Info($"尝试识别根目录 DLL: {rootDll}");
                 var folderName = await Task.Run(() => GetBepInPluginName(rootDll));
-                Logger.Info($"GetBepInPluginName 返回: {(folderName ?? "null")}");
                 if (string.IsNullOrEmpty(folderName))
                     return (false, "无法识别模组：压缩包根目录 DLL 未找到 [BepInPlugin] 特性");
 
@@ -260,12 +256,7 @@ public class ModInstaller
                                   || a.AttributeType.Name == "BepInPluginAttribute");
 
             if (attr == null)
-            {
-                Logger.Info($"DLL {Path.GetFileName(dllPath)} 中未找到 [BepInPlugin] 特性（已搜索所有类型）");
                 return (null, null, null);
-            }
-
-            Logger.Info($"  找到 BepInPlugin: args={string.Join(", ", attr.ConstructorArguments.Select(a => $"{a.Value}"))}");
 
             var guid = attr.ConstructorArguments.ElementAtOrDefault(0).Value as string;
             var name = attr.ConstructorArguments.ElementAtOrDefault(1).Value as string;
@@ -286,24 +277,12 @@ public class ModInstaller
         dirs.Add(RuntimeEnvironment.GetRuntimeDirectory());
 
         // 1. 通过 GameLocalization.GetGameDirectory() 定位 BepInEx/core/
-        //    该函数优先使用 AppConfig.GamePath，其次通过 Steam 注册表查找
         var gameDir = GameLocalization.GetGameDirectory();
         if (!string.IsNullOrEmpty(gameDir))
         {
             var bepInExCore = Path.Combine(gameDir, "BepInEx", "core");
             if (Directory.Exists(bepInExCore) && !dirs.Contains(bepInExCore))
-            {
-                Logger.Info($"找到 BepInEx/core/ 目录: {bepInExCore}");
                 dirs.Add(bepInExCore);
-            }
-            else
-            {
-                Logger.Warn($"未找到 BepInEx/core/ 目录 (gameDir={gameDir})");
-            }
-        }
-        else
-        {
-            Logger.Warn("GetGameDirectory() 返回 null，无法定位 BepInEx/core/");
         }
 
         // 2. 在当前程序所在目录下找 BepInEx/core/
@@ -312,13 +291,9 @@ public class ModInstaller
         {
             var bepInExCore = Path.Combine(appDir, "BepInEx", "core");
             if (Directory.Exists(bepInExCore) && !dirs.Contains(bepInExCore))
-            {
-                Logger.Info($"找到 BepInEx/core/ 目录: {bepInExCore}");
                 dirs.Add(bepInExCore);
-            }
         }
 
-        Logger.Info($"GetAssemblySearchDirs 搜索目录: {string.Join("; ", dirs)}");
         return dirs;
     }
 

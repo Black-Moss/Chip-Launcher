@@ -1,3 +1,5 @@
+using System.Collections.ObjectModel;
+using System.ComponentModel;
 using System.Runtime.InteropServices;
 using Avalonia;
 using Avalonia.Controls;
@@ -22,6 +24,9 @@ public partial class MainWindow : Window
     private string[] _gameTexts = [];
     private DispatcherTimer? _textTimer;
 
+    // ── Toast 通知系统 ─────────────────────────────────────────
+    private readonly ObservableCollection<ToastItem> _toasts = new();
+
     public MainWindow()
     {
         InitializeComponent();
@@ -36,9 +41,24 @@ public partial class MainWindow : Window
         Resized += OnWindowResized;
         PropertyChanged += OnWindowPropertyChanged;
 
-        // 启动时后台预取资讯 + 加载游戏文本
+        // 启动时后台预取资讯 + 加载游戏文本 + 检查 BepInEx
         _ = PrefetchNewsAsync();
         LoadGameLocalization();
+        CheckBepInExStatus();
+
+        // Toast 容器绑定
+        ToastContainer.ItemsSource = _toasts;
+
+        // 全局通知事件 — 新消息插入到顶部，旧消息自动下移
+        AppNotification.OnShow += (message, type) =>
+        {
+            var toast = new ToastItem(message, type);
+            _toasts.Insert(0, toast);
+            toast.StartFadeOut(() =>
+            {
+                Dispatcher.UIThread.Post(() => _toasts.Remove(toast));
+            });
+        };
 
         // 导航按钮事件（使用 PointerPressed 替代 Click，因为 Border 没有 Click 事件）
         BtnPlay.PointerPressed += (_, _) => LaunchGame();
@@ -82,8 +102,22 @@ public partial class MainWindow : Window
         if (!HasCompatibleFile(e)) return;
         e.DragEffects = DragDropEffects.Copy;
 
-        var fileName = GetFileName(e);
-        WindowDropFileName.Text = fileName != null ? $"📄 {fileName}" : "";
+        var files = e.Data.GetFiles()?.ToList();
+        if (files == null || files.Count == 0) return;
+
+        if (files.Count == 1)
+        {
+            var fileName = Path.GetFileName(files[0].Path?.LocalPath);
+            WindowDropFileName.Text = fileName != null ? $"📄 {fileName}" : "";
+        }
+        else
+        {
+            var firstFileName = Path.GetFileName(files[0].Path?.LocalPath);
+            WindowDropFileName.Text = firstFileName != null
+                ? $"📄 {firstFileName}  (+{files.Count - 1} 个文件)"
+                : $"📄 共 {files.Count} 个文件";
+        }
+
         WindowDropOverlay.IsVisible = true;
     }
 
@@ -100,21 +134,24 @@ public partial class MainWindow : Window
         var files = e.Data.GetFiles()?.ToList();
         if (files == null || files.Count == 0) return;
 
+        // 收集所有文件路径
+        var paths = files
+            .Select(f => f.Path?.LocalPath)
+            .Where(p => p != null)
+            .Cast<string>()
+            .ToList();
+
+        if (paths.Count == 0) return;
+
         // 切换到模组页面（如果尚未在模组页）
         NavigateTo("Mods", () => new ModsPage());
 
-        // 获取当前 ModsPage 实例并转发文件
+        // 等待页面渲染完成
+        await Task.Delay(100);
+
+        // 一次性批量安装，LoadMods 只调用一次
         if (ContentFrame.Content is ModsPage modsPage)
-        {
-            // 等待页面渲染完成
-            await Task.Delay(100);
-            foreach (var file in files)
-            {
-                var localPath = file.Path?.LocalPath;
-                if (localPath != null)
-                    modsPage.InstallFile(localPath);
-            }
-        }
+            await modsPage.InstallFilesAsync(paths);
     }
 
     /// <summary>检查拖放数据中是否包含兼容的文件</summary>
@@ -131,14 +168,6 @@ public partial class MainWindow : Window
             var ext = Path.GetExtension(path);
             return AllowedExtensions.Contains(ext);
         });
-    }
-
-    /// <summary>获取拖放文件中的第一个文件名（用于显示）</summary>
-    private static string? GetFileName(DragEventArgs e)
-    {
-        var files = e.Data.GetFiles();
-        var first = files?.FirstOrDefault();
-        return first?.Path?.LocalPath != null ? Path.GetFileName(first.Path.LocalPath) : null;
     }
 
     // ===== Win32 圆角窗口实现 =====
@@ -241,12 +270,48 @@ public partial class MainWindow : Window
         }
     }
 
-    private void ShowCurrentText()
+    /// <summary>启动时检查游戏是否安装了 BepInEx，未安装则在标题栏显示警告</summary>
+    private void CheckBepInExStatus()
+    {
+        var installed = GameLocalization.IsBepInExInstalled();
+        if (installed)
+        {
+            Logger.Info("BepInEx 已安装");
+            BepInExWarning.IsVisible = false;
+        }
+        else
+        {
+            Logger.Warn("BepInEx 未安装 — 模组管理功能不可用");
+            BepInExWarning.IsVisible = true;
+        }
+    }
+
+    /// <summary>显示当前文本，带淡入/淡出过渡（300ms）</summary>
+    private async void ShowCurrentText()
     {
         if (_gameTexts.Length == 0) return;
+
+        // 如果有旧文本正在显示，先淡出
+        if (GameInfoPanel.IsVisible)
+            await FadeGameInfoAsync(1, 0, 300);
+
         var text = _gameTexts[_currentTextIndex % _gameTexts.Length];
         GameInfoPanel.ItemsSource = new[] { text };
         GameInfoPanel.IsVisible = true;
+
+        // 淡入新文本
+        await FadeGameInfoAsync(0, 1, 300);
+    }
+
+    /// <summary>GameInfoPanel 透明度渐变</summary>
+    private async Task FadeGameInfoAsync(double from, double to, int durationMs)
+    {
+        const int steps = 15;
+        for (var i = 0; i <= steps; i++)
+        {
+            GameInfoPanel.Opacity = from + (to - from) * i / steps;
+            await Task.Delay(durationMs / steps);
+        }
     }
 
     private void StartTextRotation()
@@ -329,4 +394,56 @@ public partial class MainWindow : Window
             _gameService.LaunchViaSteam();
         }
     }
+}
+
+/// <summary>Toast 通知项 — 包含消息、颜色、渐隐计时</summary>
+public class ToastItem : INotifyPropertyChanged
+{
+    private double _opacity = 1;
+
+    public Guid Id { get; } = Guid.NewGuid();
+    public string Message { get; }
+    public Brush TextColor { get; }
+    public Brush BackgroundColor { get; }
+
+    public double Opacity
+    {
+        get => _opacity;
+        set
+        {
+            _opacity = value;
+            PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(nameof(Opacity)));
+        }
+    }
+
+    public ToastItem(string message, NotificationType type)
+    {
+        Message = message;
+        var (textHex, bgHex) = type switch
+        {
+            NotificationType.Success => ("#4CAF50", "#cc1a3a1a"),
+            NotificationType.Warning => ("#e67e22", "#cc3d1a00"),
+            NotificationType.Error   => ("#e74c3c", "#cc3d0000"),
+            _                        => ("#ffffff", "#cc000000")
+        };
+        TextColor = new SolidColorBrush(Color.Parse(textHex));
+        BackgroundColor = new SolidColorBrush(Color.Parse(bgHex));
+    }
+
+    /// <summary>3 秒后渐变消失（300ms 内 Opacity→0），完成后回调</summary>
+    public async void StartFadeOut(Action onComplete)
+    {
+        await Task.Delay(2800); // 停留 2.8 秒
+
+        // 300ms 渐变消失（每 30ms 降 0.1）
+        for (var i = 0; i < 10; i++)
+        {
+            await Task.Delay(30);
+            Opacity = 1.0 - (i + 1) * 0.1;
+        }
+
+        onComplete();
+    }
+
+    public event PropertyChangedEventHandler? PropertyChanged;
 }

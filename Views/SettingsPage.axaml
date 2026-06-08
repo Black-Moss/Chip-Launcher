@@ -105,7 +105,6 @@
                       Padding="5,4">
                 <ComboBoxItem Content="📰 游戏资讯" />
                 <ComboBoxItem Content="📦 模组管理" />
-                <ComboBoxItem Content="🌐 模组下载" />
                 <ComboBoxItem Content="⚙ 设置" />
             </ComboBox>
             <TextBlock Grid.Column="2"
@@ -135,26 +134,6 @@
                        Opacity="0.5"
                        VerticalAlignment="Center"
                        Margin="8,0,0,0" />
-        </Grid>
-
-        <!-- NexusMods 游戏域名 -->
-        <Grid Grid.Row="8" Margin="0,0,0,12" ColumnDefinitions="100,120,*"
-              Name="SettingsNexusDomainRow">
-            <TextBlock Text="NexusMods 域名："
-                       Foreground="{StaticResource TextSecondaryBrush}"
-                       FontSize="14"
-                       VerticalAlignment="Center" />
-            <TextBox Grid.Column="1"
-                     FontSize="14"
-                     Padding="5"
-                     Margin="0,0,5,0"
-                     Text="{Binding NexusModsGameDomain, Source={x:Static services:AppConfig.Instance}, Mode=TwoWay}" />
-            <TextBlock Grid.Column="2"
-                       Text="如 scavprototype"
-                       Foreground="{StaticResource TextSecondaryBrush}"
-                       FontSize="12"
-                       Opacity="0.5"
-                       VerticalAlignment="Center" />
         </Grid>
 
         <!-- 清除缓存 -->
