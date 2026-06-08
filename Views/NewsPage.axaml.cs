@@ -1,5 +1,3 @@
-using System;
-using System.Collections.Generic;
 using System.Diagnostics;
 using Avalonia.Controls;
 using Avalonia.Interactivity;
@@ -9,13 +7,13 @@ using ChipLauncher.Services;
 namespace ChipLauncher.Views;
 
 /// <summary>
-/// 游戏资讯页面 - 从 Steam RSS 获取新闻（支持加载状态 + 失败重试）
+///     游戏资讯页面 - 从 Steam RSS 获取新闻（支持加载状态 + 失败重试）
 /// </summary>
 public partial class NewsPage : UserControl
 {
     private readonly INewsService _newsService;
-    private bool _selectionHooked;
     private string _currentUrl = string.Empty;
+    private bool _selectionHooked;
 
     public NewsPage()
     {
@@ -73,13 +71,9 @@ public partial class NewsPage : UserControl
         }
 
         if (items.Count > 0)
-        {
             NewsListBox.SelectedIndex = 0;
-        }
         else
-        {
             ContentText.Text = "暂无资讯。";
-        }
     }
 
     /// <summary>列表选中项改变 → 更新详情 + 原文按钮</summary>
@@ -128,7 +122,7 @@ public partial class NewsPage : UserControl
             Process.Start(new ProcessStartInfo
             {
                 FileName = _currentUrl,
-                UseShellExecute = true,
+                UseShellExecute = true
             });
         }
         catch (Exception ex)

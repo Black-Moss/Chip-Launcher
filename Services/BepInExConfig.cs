@@ -1,13 +1,9 @@
-using System;
-using System.Collections.Generic;
-using System.IO;
-using System.Linq;
 using System.Text;
 
 namespace ChipLauncher.Services;
 
 /// <summary>
-/// 表示 BepInEx .cfg 配置文件中的一个配置项
+///     表示 BepInEx .cfg 配置文件中的一个配置项
 /// </summary>
 public class ConfigEntry
 {
@@ -31,11 +27,16 @@ public class ConfigEntry
 }
 
 /// <summary>
-/// BepInEx .cfg 配置文件解析器（读取和写入）
+///     BepInEx .cfg 配置文件解析器（读取和写入）
 /// </summary>
 public class BepInExConfig
 {
     private readonly string _filePath;
+
+    private BepInExConfig(string filePath)
+    {
+        _filePath = filePath;
+    }
 
     /// <summary>所有配置项</summary>
     public List<ConfigEntry> Entries { get; } = new();
@@ -43,9 +44,20 @@ public class BepInExConfig
     /// <summary>文件头部（文件开头的注释等）</summary>
     public string Header { get; private set; } = string.Empty;
 
-    private BepInExConfig(string filePath)
+    /// <summary>获取配置文件名（不含路径）</summary>
+    public string FileName => Path.GetFileName(_filePath);
+
+    /// <summary>获取该配置对应的模组描述</summary>
+    public string ModDescription
     {
-        _filePath = filePath;
+        get
+        {
+            // 从 Header 中提取插件名和版本
+            foreach (var entry in Entries)
+                if (!string.IsNullOrEmpty(entry.Description))
+                    return entry.Description;
+            return FileName;
+        }
     }
 
     /// <summary>从文件加载配置</summary>
@@ -58,13 +70,13 @@ public class BepInExConfig
             var config = new BepInExConfig(filePath);
             var lines = File.ReadAllLines(filePath, Encoding.UTF8);
 
-            string currentSection = string.Empty;
-            string currentDescription = string.Empty;
-            string currentType = string.Empty;
-            string currentDefault = string.Empty;
+            var currentSection = string.Empty;
+            var currentDescription = string.Empty;
+            var currentType = string.Empty;
+            var currentDefault = string.Empty;
             var headerLines = new List<string>();
 
-            bool inHeader = true;
+            var inHeader = true;
 
             foreach (var line in lines)
             {
@@ -82,13 +94,9 @@ public class BepInExConfig
                 if (trimmed.StartsWith("##"))
                 {
                     if (inHeader)
-                    {
                         headerLines.Add(line);
-                    }
                     else
-                    {
                         currentDescription = trimmed.TrimStart('#').Trim();
-                    }
                     continue;
                 }
 
@@ -107,10 +115,7 @@ public class BepInExConfig
                 }
 
                 // 普通注释（跳过）
-                if (trimmed.StartsWith(';') || trimmed.StartsWith('#'))
-                {
-                    continue;
-                }
+                if (trimmed.StartsWith(';') || trimmed.StartsWith('#')) continue;
 
                 // 键值对
                 if (trimmed.Contains('=') && !string.IsNullOrEmpty(currentSection))
@@ -126,7 +131,7 @@ public class BepInExConfig
                         Value = value,
                         Description = currentDescription,
                         SettingType = currentType,
-                        DefaultValue = currentDefault,
+                        DefaultValue = currentDefault
                     });
 
                     // 重置当前状态
@@ -172,18 +177,11 @@ public class BepInExConfig
 
                 foreach (var entry in group)
                 {
-                    if (!string.IsNullOrEmpty(entry.Description))
-                    {
-                        writer.WriteLine($"## {entry.Description}");
-                    }
+                    if (!string.IsNullOrEmpty(entry.Description)) writer.WriteLine($"## {entry.Description}");
                     if (!string.IsNullOrEmpty(entry.SettingType))
-                    {
                         writer.WriteLine($"# Setting type: {entry.SettingType}");
-                    }
                     if (!string.IsNullOrEmpty(entry.DefaultValue))
-                    {
                         writer.WriteLine($"# Default value: {entry.DefaultValue}");
-                    }
                     writer.WriteLine($"{entry.Key} = {entry.Value}");
                     writer.WriteLine();
                 }
@@ -196,24 +194,6 @@ public class BepInExConfig
         {
             Logger.Error($"保存配置文件失败: {ex.Message}");
             return false;
-        }
-    }
-
-    /// <summary>获取配置文件名（不含路径）</summary>
-    public string FileName => Path.GetFileName(_filePath);
-
-    /// <summary>获取该配置对应的模组描述</summary>
-    public string ModDescription
-    {
-        get
-        {
-            // 从 Header 中提取插件名和版本
-            foreach (var entry in Entries)
-            {
-                if (!string.IsNullOrEmpty(entry.Description))
-                    return entry.Description;
-            }
-            return FileName;
         }
     }
 }

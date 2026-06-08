@@ -1,8 +1,8 @@
 namespace ChipLauncher.Models;
 
 /// <summary>
-/// 表示 BepInEx plugins 目录下的一个模组
-/// 结构：plugins/模组名/Mod.dll（启用）或 Mod.disabled（禁用）
+///     表示 BepInEx plugins 目录下的一个模组
+///     结构：plugins/模组名/Mod.dll（启用）或 Mod.disabled（禁用）
 /// </summary>
 public class ModInfo
 {
@@ -19,6 +19,9 @@ public class ModInfo
     public bool IsEnabled
     {
         get => PluginFilePath.EndsWith(".dll", StringComparison.OrdinalIgnoreCase);
-        set { /* 由切换逻辑控制 */ }
+        set
+        {
+            /* 由切换逻辑控制 */
+        }
     }
 }

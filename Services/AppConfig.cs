@@ -1,12 +1,12 @@
 using System.ComponentModel;
-using System.IO;
 using System.Runtime.CompilerServices;
 using System.Text.Json;
+using System.Text.Json.Serialization;
 
 namespace ChipLauncher.Services;
 
 /// <summary>
-/// 应用配置管理（JSON 文件存储）— 单例 + 自动保存（防抖 500ms）
+///     应用配置管理（JSON 文件存储）— 单例 + 自动保存（防抖 500ms）
 /// </summary>
 public class AppConfig : INotifyPropertyChanged
 {
@@ -15,12 +15,31 @@ public class AppConfig : INotifyPropertyChanged
             AppDomain.CurrentDomain.BaseDirectory,
             "config.json");
 
-    /// <summary>全局唯一实例，首次访问时自动从文件加载</summary>
-    public static AppConfig Instance { get; } = Load();
+    private static readonly TimeSpan SaveDebounce = TimeSpan.FromMilliseconds(500);
 
     // ── 属性 ──────────────────────────────────────────────────
 
     private string? _gamePath;
+
+    private int _maxRetries = 5;
+
+    // ── 防抖保存 ──────────────────────────────────────────────
+
+    private CancellationTokenSource? _saveCts;
+
+    private string _defaultPage = "News";
+
+    private int _textRotationInterval = 3;
+
+    // ── 私有构造（防止外部 new，只能通过 Load 创建） ──────────
+    [JsonConstructor]
+    private AppConfig()
+    {
+    }
+
+    /// <summary>全局唯一实例，首次访问时自动从文件加载</summary>
+    public static AppConfig Instance { get; } = Load();
+
     public string? GamePath
     {
         get => _gamePath;
@@ -33,7 +52,21 @@ public class AppConfig : INotifyPropertyChanged
         }
     }
 
-    private int _maxRetries = 5;
+    /// <summary>启动时默认显示的页面（News / Mods / Settings，默认 News）</summary>
+    public string DefaultPage
+    {
+        get => _defaultPage;
+        set
+        {
+            var valid = new[] { "News", "Mods", "Settings" };
+            var clamped = Array.Exists(valid, v => v == value) ? value : "News";
+            if (_defaultPage == clamped) return;
+            _defaultPage = clamped;
+            OnPropertyChanged();
+            Save();
+        }
+    }
+
     /// <summary>资讯获取失败时的最大重试次数（默认 5，JSON 序列化用此属性）</summary>
     public int MaxRetries
     {
@@ -50,10 +83,10 @@ public class AppConfig : INotifyPropertyChanged
     }
 
     /// <summary>
-    /// 给 TextBox 绑定的字符串包装属性（避免 int → string 转换异常）。
-    /// 空值 / 非法输入不更新。
+    ///     给 TextBox 绑定的字符串包装属性（避免 int → string 转换异常）。
+    ///     空值 / 非法输入不更新。
     /// </summary>
-    [System.Text.Json.Serialization.JsonIgnore]
+    [JsonIgnore]
     public string MaxRetriesText
     {
         get => _maxRetries.ToString();
@@ -64,7 +97,23 @@ public class AppConfig : INotifyPropertyChanged
         }
     }
 
-    private int _textRotationInterval = 3;
+    /// <summary>ComboBox 绑定的索引（0=News, 1=Mods, 2=Settings），不序列化</summary>
+    [JsonIgnore]
+    public int DefaultPageIndex
+    {
+        get
+        {
+            var pages = new[] { "News", "Mods", "Settings" };
+            return Math.Max(0, Array.IndexOf(pages, _defaultPage));
+        }
+        set
+        {
+            var pages = new[] { "News", "Mods", "Settings" };
+            if (value >= 0 && value < pages.Length)
+                DefaultPage = pages[value];
+        }
+    }
+
     /// <summary>标题栏游戏文本轮播间隔（秒，默认 3，JSON 序列化用此属性）</summary>
     public int TextRotationInterval
     {
@@ -81,9 +130,9 @@ public class AppConfig : INotifyPropertyChanged
     }
 
     /// <summary>
-    /// 给 TextBox 绑定的字符串包装属性（避免 int → string 转换异常）
+    ///     给 TextBox 绑定的字符串包装属性（避免 int → string 转换异常）
     /// </summary>
-    [System.Text.Json.Serialization.JsonIgnore]
+    [JsonIgnore]
     public string TextRotationIntervalText
     {
         get => _textRotationInterval.ToString();
@@ -94,9 +143,8 @@ public class AppConfig : INotifyPropertyChanged
         }
     }
 
-    // ── 私有构造（防止外部 new，只能通过 Load 创建） ──────────
-    [System.Text.Json.Serialization.JsonConstructor]
-    private AppConfig() { }
+    // ── INotifyPropertyChanged ────────────────────────────────
+    public event PropertyChangedEventHandler? PropertyChanged;
 
     /// <summary>从 JSON 文件加载，不存在则返回默认值</summary>
     private static AppConfig Load()
@@ -120,14 +168,9 @@ public class AppConfig : INotifyPropertyChanged
         return new AppConfig();
     }
 
-    // ── 防抖保存 ──────────────────────────────────────────────
-
-    private CancellationTokenSource? _saveCts;
-    private static readonly TimeSpan SaveDebounce = TimeSpan.FromMilliseconds(500);
-
     /// <summary>
-    /// 防抖保存：500ms 内没有被再次调用才会真正写入文件。
-    /// 连续修改（如打字时）只会触发一次最终写入。
+    ///     防抖保存：500ms 内没有被再次调用才会真正写入文件。
+    ///     连续修改（如打字时）只会触发一次最终写入。
     /// </summary>
     private void Save()
     {
@@ -147,7 +190,7 @@ public class AppConfig : INotifyPropertyChanged
 
                 var json = JsonSerializer.Serialize(this, new JsonSerializerOptions { WriteIndented = true });
                 File.WriteAllText(ConfigPath, json);
-                Logger.Info($"配置已保存");
+                Logger.Info("配置已保存");
             }
             catch (TaskCanceledException)
             {
@@ -159,9 +202,6 @@ public class AppConfig : INotifyPropertyChanged
             }
         }, token);
     }
-
-    // ── INotifyPropertyChanged ────────────────────────────────
-    public event PropertyChangedEventHandler? PropertyChanged;
 
     private void OnPropertyChanged([CallerMemberName] string? name = null)
     {

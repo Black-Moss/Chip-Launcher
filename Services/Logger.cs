@@ -1,11 +1,10 @@
 using System.Diagnostics;
-using System.IO;
 using System.Text;
 
 namespace ChipLauncher.Services;
 
 /// <summary>
-/// 日志级别
+///     日志级别
 /// </summary>
 public enum LogLevel
 {
@@ -15,7 +14,7 @@ public enum LogLevel
 }
 
 /// <summary>
-/// 日志服务 - 输出到文件 + IDE 控制台（UTF-8 直写，无乱码）
+///     日志服务 - 输出到文件 + IDE 控制台（UTF-8 直写，无乱码）
 /// </summary>
 public static class Logger
 {
@@ -79,7 +78,6 @@ public static class Logger
 
         // 2. IDE 控制台（直接写入 UTF-8 字节流，彻底避免编码问题）
         if (StdoutStream != null)
-        {
             try
             {
                 var bytes = Encoding.UTF8.GetBytes(line + Environment.NewLine);
@@ -90,7 +88,6 @@ public static class Logger
             {
                 // 忽略
             }
-        }
 
         // 3. 写入日志文件
         lock (Lock)
@@ -107,5 +104,8 @@ public static class Logger
     }
 
     /// <summary>获取日志目录路径</summary>
-    public static string GetLogDirectory() => LogDir;
+    public static string GetLogDirectory()
+    {
+        return LogDir;
+    }
 }

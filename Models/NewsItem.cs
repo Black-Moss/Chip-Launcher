@@ -1,7 +1,7 @@
 namespace ChipLauncher.Models;
 
 /// <summary>
-/// 游戏资讯项数据模型
+///     游戏资讯项数据模型
 /// </summary>
 public class NewsItem
 {

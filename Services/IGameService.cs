@@ -1,7 +1,7 @@
 namespace ChipLauncher.Services;
 
 /// <summary>
-/// 游戏启动服务接口
+///     游戏启动服务接口
 /// </summary>
 public interface IGameService
 {

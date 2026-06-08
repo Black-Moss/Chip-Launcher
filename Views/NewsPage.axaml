@@ -24,11 +24,11 @@
                                                FontWeight="Bold"
                                                Foreground="{StaticResource TextPrimaryBrush}"
                                                TextWrapping="Wrap"
-                                               Margin="0,0,0,4"/>
+                                               Margin="0,0,0,4" />
                                     <TextBlock Grid.Row="1"
                                                Text="{Binding PublishDate, StringFormat={}{0:yyyy-MM-dd}}"
                                                FontSize="11"
-                                               Foreground="{StaticResource TextSecondaryBrush}"/>
+                                               Foreground="{StaticResource TextSecondaryBrush}" />
                                 </Grid>
                             </Border>
                         </DataTemplate>
@@ -46,13 +46,13 @@
                                FontWeight="Bold"
                                Foreground="{StaticResource TextPrimaryBrush}"
                                TextWrapping="Wrap"
-                               Margin="0,0,0,8"/>
+                               Margin="0,0,0,8" />
 
                     <TextBlock Name="DateText"
                                Grid.Row="1"
                                FontSize="12"
                                Foreground="{StaticResource TextSecondaryBrush}"
-                               Margin="0,0,0,8"/>
+                               Margin="0,0,0,8" />
 
                     <!-- 打开原文按钮（日期下方） -->
                     <Button Name="OpenUrlButton"
@@ -62,13 +62,13 @@
                             FontSize="13"
                             HorizontalAlignment="Left"
                             Margin="0,0,0,12"
-                            IsVisible="False"/>
+                            IsVisible="False" />
 
                     <TextBlock Name="ContentText"
                                Grid.Row="3"
                                FontSize="14"
                                Foreground="{StaticResource TextSecondaryBrush}"
-                               TextWrapping="Wrap"/>
+                               TextWrapping="Wrap" />
                 </Grid>
             </ScrollViewer>
         </Grid>
@@ -84,12 +84,12 @@
                              Width="200"
                              Height="4"
                              Foreground="{StaticResource TextPrimaryBrush}"
-                             Background="#333"/>
+                             Background="#333" />
                 <TextBlock Text="正在加载资讯…"
                            FontSize="16"
                            Foreground="{StaticResource TextPrimaryBrush}"
                            Margin="0,15,0,0"
-                           HorizontalAlignment="Center"/>
+                           HorizontalAlignment="Center" />
             </StackPanel>
         </Border>
 
@@ -104,19 +104,19 @@
                            FontSize="22"
                            FontWeight="Bold"
                            Foreground="{StaticResource TextPrimaryBrush}"
-                           HorizontalAlignment="Center"/>
+                           HorizontalAlignment="Center" />
                 <TextBlock Text="无法连接到 Steam 资讯服务器，请检查网络后重试"
                            FontSize="14"
                            Foreground="{StaticResource TextSecondaryBrush}"
                            Opacity="0.7"
                            Margin="0,10,0,20"
                            HorizontalAlignment="Center"
-                           TextWrapping="Wrap"/>
+                           TextWrapping="Wrap" />
                 <Button Name="RetryButton"
                         Content="🔄 重新加载"
                         Padding="25,10"
                         FontSize="15"
-                        HorizontalAlignment="Center"/>
+                        HorizontalAlignment="Center" />
             </StackPanel>
         </Border>
     </Grid>

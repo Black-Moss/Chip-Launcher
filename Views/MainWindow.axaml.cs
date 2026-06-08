@@ -1,4 +1,3 @@
-using System;
 using System.Runtime.InteropServices;
 using Avalonia;
 using Avalonia.Controls;
@@ -9,15 +8,15 @@ using ChipLauncher.Services;
 namespace ChipLauncher.Views;
 
 /// <summary>
-/// 主窗口 - 游戏启动器（纯黑圆角风格）
+///     主窗口 - 游戏启动器（纯黑圆角风格）
 /// </summary>
 public partial class MainWindow : Window
 {
     private const int WindowCornerRadius = 10;
 
     private readonly IGameService _gameService;
-    private string[] _gameTexts = [];
     private int _currentTextIndex;
+    private string[] _gameTexts = [];
     private DispatcherTimer? _textTimer;
 
     public MainWindow()
@@ -38,26 +37,31 @@ public partial class MainWindow : Window
         _ = PrefetchNewsAsync();
         LoadGameLocalization();
 
-        // 导航按钮事件
-        BtnPlay.Click += (_, _) => LaunchGame();
-        BtnMods.Click += (_, _) =>
+        // 导航按钮事件（使用 PointerPressed 替代 Click，因为 Border 没有 Click 事件）
+        BtnPlay.PointerPressed += (_, _) => LaunchGame();
+        BtnMods.PointerPressed += (_, _) =>
         {
             Logger.Info("导航到: 模组管理");
             ContentFrame.Content = new ModsPage();
         };
-        BtnNews.Click += (_, _) =>
+        BtnNews.PointerPressed += (_, _) =>
         {
             Logger.Info("导航到: 游戏资讯");
             ContentFrame.Content = new NewsPage();
         };
-        BtnSettings.Click += (_, _) =>
+        BtnSettings.PointerPressed += (_, _) =>
         {
             Logger.Info("导航到: 设置");
             ContentFrame.Content = new SettingsPage();
         };
 
-        // 默认显示资讯页
-        ContentFrame.Content = new NewsPage();
+        // 根据配置显示默认页面
+        ContentFrame.Content = AppConfig.Instance.DefaultPage switch
+        {
+            "Mods" => new ModsPage(),
+            "Settings" => new SettingsPage(),
+            _ => new NewsPage(),
+        };
 
         // 窗口控制按钮
         BtnMinimize.Click += (_, _) => WindowState = WindowState.Minimized;
@@ -82,8 +86,8 @@ public partial class MainWindow : Window
     private static extern IntPtr CreateRoundRectRgn(int x1, int y1, int x2, int y2, int cx, int cy);
 
     /// <summary>
-    /// 应用或移除圆角窗口区域。
-    /// 最大化时移除区域（窗口应为矩形全屏），普通/最小化时应用圆角。
+    ///     应用或移除圆角窗口区域。
+    ///     最大化时移除区域（窗口应为矩形全屏），普通/最小化时应用圆角。
     /// </summary>
     private void ApplyRoundCorners()
     {
@@ -107,10 +111,8 @@ public partial class MainWindow : Window
 
         var hRgn = CreateRoundRectRgn(0, 0, width, height, WindowCornerRadius, WindowCornerRadius);
         if (hRgn != IntPtr.Zero)
-        {
             // SetWindowRgn 接管了 HRGN 所有权，不需要手动 DeleteObject
             SetWindowRgn(hwnd, hRgn, true);
-        }
     }
 
     /// <summary>窗口大小变化时重新应用圆角区域</summary>
@@ -122,10 +124,7 @@ public partial class MainWindow : Window
     /// <summary>窗口状态变化（最大化/还原）时重新应用圆角区域</summary>
     private void OnWindowPropertyChanged(object? sender, AvaloniaPropertyChangedEventArgs e)
     {
-        if (e.Property == WindowStateProperty)
-        {
-            ApplyRoundCorners();
-        }
+        if (e.Property == WindowStateProperty) ApplyRoundCorners();
     }
 
     // ===== 标题栏拖拽 =====
@@ -134,9 +133,7 @@ public partial class MainWindow : Window
     private void OnTitleBarPointerPressed(object? sender, PointerPressedEventArgs e)
     {
         if (e.GetCurrentPoint(this).Properties.PointerUpdateKind == PointerUpdateKind.LeftButtonPressed)
-        {
             BeginMoveDrag(e);
-        }
     }
 
     // ===== 资讯预取 =====
@@ -193,7 +190,7 @@ public partial class MainWindow : Window
         _textTimer?.Stop();
         _textTimer = new DispatcherTimer
         {
-            Interval = TimeSpan.FromSeconds(AppConfig.Instance.TextRotationInterval),
+            Interval = TimeSpan.FromSeconds(AppConfig.Instance.TextRotationInterval)
         };
         _textTimer.Tick += (_, _) =>
         {

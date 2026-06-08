@@ -4,32 +4,34 @@
              x:Class="ChipLauncher.Views.SettingsPage">
     <Grid Margin="15">
         <Grid.RowDefinitions>
-            <RowDefinition Height="Auto"/>
-            <RowDefinition Height="Auto"/>
-            <RowDefinition Height="Auto"/>
-            <RowDefinition Height="Auto"/>
-            <RowDefinition Height="Auto"/>
-            <RowDefinition Height="*"/>
+            <RowDefinition Height="Auto" />
+            <RowDefinition Height="Auto" />
+            <RowDefinition Height="Auto" />
+            <RowDefinition Height="Auto" />
+            <RowDefinition Height="Auto" />
+            <RowDefinition Height="Auto" />
+            <RowDefinition Height="Auto" />
+            <RowDefinition Height="*" />
         </Grid.RowDefinitions>
 
         <TextBlock Text="设置"
-                   Classes="PageTitle"/>
+                   Classes="PageTitle" />
 
         <!-- 游戏路径 -->
         <Grid Grid.Row="1" Margin="0,0,0,12" ColumnDefinitions="100,*,Auto">
             <TextBlock Text="游戏路径："
                        Foreground="{StaticResource TextSecondaryBrush}"
                        FontSize="14"
-                       VerticalAlignment="Center"/>
+                       VerticalAlignment="Center" />
             <TextBox Grid.Column="1"
                      FontSize="14"
                      Padding="5"
                      Margin="0,0,5,0"
-                     Text="{Binding GamePath, Source={x:Static services:AppConfig.Instance}, Mode=TwoWay}"/>
+                     Text="{Binding GamePath, Source={x:Static services:AppConfig.Instance}, Mode=TwoWay}" />
             <Button Grid.Column="2"
                     Content="浏览…"
                     Padding="10,5"
-                    Click="OnBrowseClick"/>
+                    Click="OnBrowseClick" />
         </Grid>
 
         <!-- 资讯重试次数 -->
@@ -37,18 +39,18 @@
             <TextBlock Text="重试次数："
                        Foreground="{StaticResource TextSecondaryBrush}"
                        FontSize="14"
-                       VerticalAlignment="Center"/>
+                       VerticalAlignment="Center" />
             <TextBox Grid.Column="1"
                      FontSize="14"
                      Padding="5"
-                     Text="{Binding MaxRetriesText, Source={x:Static services:AppConfig.Instance}, Mode=TwoWay}"/>
+                     Text="{Binding MaxRetriesText, Source={x:Static services:AppConfig.Instance}, Mode=TwoWay}" />
             <TextBlock Grid.Column="2"
                        Text="(资讯加载失败时的重试次数，范围 1~20)"
                        Foreground="{StaticResource TextSecondaryBrush}"
                        FontSize="12"
                        Opacity="0.5"
                        VerticalAlignment="Center"
-                       Margin="8,0,0,0"/>
+                       Margin="8,0,0,0" />
         </Grid>
 
         <!-- 文本轮播间隔 -->
@@ -56,42 +58,65 @@
             <TextBlock Text="轮播间隔："
                        Foreground="{StaticResource TextSecondaryBrush}"
                        FontSize="14"
-                       VerticalAlignment="Center"/>
+                       VerticalAlignment="Center" />
             <TextBox Grid.Column="1"
                      FontSize="14"
                      Padding="5"
-                     Text="{Binding TextRotationIntervalText, Source={x:Static services:AppConfig.Instance}, Mode=TwoWay}"/>
+                     Text="{Binding TextRotationIntervalText, Source={x:Static services:AppConfig.Instance}, Mode=TwoWay}" />
             <TextBlock Grid.Column="2"
                        Text="(标题游戏文本切换间隔，范围 1~60 秒)"
                        Foreground="{StaticResource TextSecondaryBrush}"
                        FontSize="12"
                        Opacity="0.5"
                        VerticalAlignment="Center"
-                       Margin="8,0,0,0"/>
+                       Margin="8,0,0,0" />
+        </Grid>
+
+        <!-- 默认启动页面 -->
+        <Grid Grid.Row="4" Margin="0,0,0,12" ColumnDefinitions="100,160,*">
+            <TextBlock Text="启动页面："
+                       Foreground="{StaticResource TextSecondaryBrush}"
+                       FontSize="14"
+                       VerticalAlignment="Center" />
+            <ComboBox Grid.Column="1"
+                      SelectedIndex="{Binding DefaultPageIndex, Source={x:Static services:AppConfig.Instance}, Mode=TwoWay}"
+                      FontSize="14"
+                      Padding="5,4">
+                <ComboBoxItem Content="📰 游戏资讯" />
+                <ComboBoxItem Content="📦 模组管理" />
+                <ComboBoxItem Content="⚙ 设置" />
+            </ComboBox>
+            <TextBlock Grid.Column="2"
+                       Text="(启动时默认显示的页面，0=资讯 1=模组 2=设置)"
+                       Foreground="{StaticResource TextSecondaryBrush}"
+                       FontSize="12"
+                       Opacity="0.5"
+                       VerticalAlignment="Center"
+                       Margin="8,0,0,0" />
         </Grid>
 
         <!-- 清除缓存 -->
-        <StackPanel Grid.Row="4" Orientation="Horizontal" Spacing="15" Margin="0,10,0,0">
+        <StackPanel Grid.Row="5" Orientation="Horizontal" Spacing="15" Margin="0,10,0,0">
             <Button Name="BtnClearCache"
                     Content="🗑 清除资讯缓存"
                     Padding="15,8"
                     FontSize="13"
                     Cursor="Hand"
-                    Click="OnClearCacheClick"/>
+                    Click="OnClearCacheClick" />
             <TextBlock Text="删除本地缓存的 Steam 资讯文件，下次打开资讯页时将重新拉取"
                        Foreground="{StaticResource TextSecondaryBrush}"
                        FontSize="12"
                        Opacity="0.6"
-                       VerticalAlignment="Center"/>
+                       VerticalAlignment="Center" />
         </StackPanel>
 
         <!-- 提示 -->
-        <TextBlock Grid.Row="5"
+        <TextBlock Grid.Row="6"
                    Text="设置修改后自动保存"
                    Foreground="{StaticResource TextSecondaryBrush}"
                    FontSize="13"
                    Opacity="0.6"
                    VerticalAlignment="Top"
-                   Margin="0,5,0,0"/>
+                   Margin="0,5,0,0" />
     </Grid>
 </UserControl>

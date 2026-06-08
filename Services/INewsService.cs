@@ -3,7 +3,7 @@ using ChipLauncher.Models;
 namespace ChipLauncher.Services;
 
 /// <summary>
-/// 游戏资讯服务接口
+///     游戏资讯服务接口
 /// </summary>
 public interface INewsService
 {

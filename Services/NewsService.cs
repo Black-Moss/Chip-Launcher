@@ -1,21 +1,19 @@
 using System.Collections.Concurrent;
 using System.Net;
-using System.Net.Http;
 using System.Security.Authentication;
 using System.Text.Json;
+using System.Text.RegularExpressions;
 using System.Xml.Linq;
 using ChipLauncher.Models;
 
 namespace ChipLauncher.Services;
 
 /// <summary>
-/// 从 Steam 新闻 RSS 获取游戏资讯（内存 + 本地文件持久缓存）
-/// 文件缓存除非手动清除，否则永久保留。
+///     从 Steam 新闻 RSS 获取游戏资讯（内存 + 本地文件持久缓存）
+///     文件缓存除非手动清除，否则永久保留。
 /// </summary>
 public partial class NewsService : INewsService
 {
-    private readonly HttpClient _httpClient;
-
     // ── 内存缓存（运行时快速读取） ──────────────────────────
     private static readonly ConcurrentDictionary<string, CacheEntry> MemCache = new();
     private static readonly TimeSpan MemCacheDuration = TimeSpan.FromDays(30);
@@ -24,17 +22,12 @@ public partial class NewsService : INewsService
     private static readonly string CacheDir = Path.Combine(
         Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData),
         "ChipLauncher");
+
     private static readonly string CacheFilePath = Path.Combine(CacheDir, "news_cache.json");
 
     // 用于文件读写的锁（避免并发冲突）
     private static readonly object FileLock = new();
-
-    private class CacheEntry
-    {
-        public List<NewsItem> Items { get; init; } = [];
-        public DateTime CachedAt { get; init; } = DateTime.UtcNow;
-        public bool IsValid => DateTime.UtcNow - CachedAt < MemCacheDuration;
-    }
+    private readonly HttpClient _httpClient;
 
     public NewsService()
     {
@@ -50,7 +43,7 @@ public partial class NewsService : INewsService
             SslOptions =
             {
                 EnabledSslProtocols = SslProtocols.Tls12,
-                RemoteCertificateValidationCallback = (_, _, _, _) => true,
+                RemoteCertificateValidationCallback = (_, _, _, _) => true
             },
             AllowAutoRedirect = true,
             MaxAutomaticRedirections = 10,
@@ -58,7 +51,7 @@ public partial class NewsService : INewsService
             // 连接池优化
             PooledConnectionLifetime = TimeSpan.FromMinutes(5),
             PooledConnectionIdleTimeout = TimeSpan.FromMinutes(2),
-            MaxConnectionsPerServer = 5,
+            MaxConnectionsPerServer = 5
         };
 
         _httpClient = new HttpClient(handler)
@@ -66,7 +59,7 @@ public partial class NewsService : INewsService
             Timeout = TimeSpan.FromSeconds(30),
             // 强制 HTTP/1.1
             DefaultRequestVersion = HttpVersion.Version11,
-            DefaultVersionPolicy = HttpVersionPolicy.RequestVersionExact,
+            DefaultVersionPolicy = HttpVersionPolicy.RequestVersionExact
         };
 
         _httpClient.DefaultRequestHeaders.UserAgent.ParseAdd(
@@ -76,56 +69,6 @@ public partial class NewsService : INewsService
         _httpClient.DefaultRequestHeaders.Add("Accept",
             "application/rss+xml,application/xml,text/xml,*/*");
         _httpClient.DefaultRequestHeaders.Add("Cache-Control", "no-cache");
-    }
-
-    // ════════════════════════════════════════════════════════
-    //  缓存读取（内存 → 本地文件回退）
-    // ════════════════════════════════════════════════════════
-
-    /// <summary>
-    /// 尝试获取缓存：先查内存缓存，若无效则尝试从本地文件加载。
-    /// 文件缓存无过期时间（除非手动清除），加载后同时填充内存缓存。
-    /// </summary>
-    public static List<NewsItem>? TryGetCached(string appId)
-    {
-        // 1. 内存缓存命中且有效
-        if (MemCache.TryGetValue(appId, out var cached) && cached.IsValid)
-            return cached.Items;
-
-        // 2. 尝试从本地文件加载
-        var fileItems = LoadFromFile(appId);
-        if (fileItems != null)
-        {
-            // 填充到内存缓存（标记为当前时间，使其有效）
-            MemCache[appId] = new CacheEntry { Items = fileItems };
-            Logger.Info($"从本地文件加载资讯缓存: AppId={appId} ({fileItems.Count} 条)");
-            return fileItems;
-        }
-
-        return null;
-    }
-
-    /// <summary>从本地 JSON 文件中读取指定 appId 的缓存数据</summary>
-    private static List<NewsItem>? LoadFromFile(string appId)
-    {
-        try
-        {
-            if (!File.Exists(CacheFilePath))
-                return null;
-
-            lock (FileLock)
-            {
-                var json = File.ReadAllText(CacheFilePath);
-                var data = JsonSerializer.Deserialize<Dictionary<string, List<NewsItem>>>(json);
-                if (data != null && data.TryGetValue(appId, out var items) && items.Count > 0)
-                    return items;
-            }
-        }
-        catch (Exception ex)
-        {
-            Logger.Warn($"读取本地缓存文件失败: {ex.Message}");
-        }
-        return null;
     }
 
     // ════════════════════════════════════════════════════════
@@ -172,6 +115,57 @@ public partial class NewsService : INewsService
             Logger.Error($"解析资讯失败: {ex.Message}", ex);
             return null;
         }
+    }
+
+    // ════════════════════════════════════════════════════════
+    //  缓存读取（内存 → 本地文件回退）
+    // ════════════════════════════════════════════════════════
+
+    /// <summary>
+    ///     尝试获取缓存：先查内存缓存，若无效则尝试从本地文件加载。
+    ///     文件缓存无过期时间（除非手动清除），加载后同时填充内存缓存。
+    /// </summary>
+    public static List<NewsItem>? TryGetCached(string appId)
+    {
+        // 1. 内存缓存命中且有效
+        if (MemCache.TryGetValue(appId, out var cached) && cached.IsValid)
+            return cached.Items;
+
+        // 2. 尝试从本地文件加载
+        var fileItems = LoadFromFile(appId);
+        if (fileItems != null)
+        {
+            // 填充到内存缓存（标记为当前时间，使其有效）
+            MemCache[appId] = new CacheEntry { Items = fileItems };
+            Logger.Info($"从本地文件加载资讯缓存: AppId={appId} ({fileItems.Count} 条)");
+            return fileItems;
+        }
+
+        return null;
+    }
+
+    /// <summary>从本地 JSON 文件中读取指定 appId 的缓存数据</summary>
+    private static List<NewsItem>? LoadFromFile(string appId)
+    {
+        try
+        {
+            if (!File.Exists(CacheFilePath))
+                return null;
+
+            lock (FileLock)
+            {
+                var json = File.ReadAllText(CacheFilePath);
+                var data = JsonSerializer.Deserialize<Dictionary<string, List<NewsItem>>>(json);
+                if (data != null && data.TryGetValue(appId, out var items) && items.Count > 0)
+                    return items;
+            }
+        }
+        catch (Exception ex)
+        {
+            Logger.Warn($"读取本地缓存文件失败: {ex.Message}");
+        }
+
+        return null;
     }
 
     // ════════════════════════════════════════════════════════
@@ -254,7 +248,7 @@ public partial class NewsService : INewsService
                     item.Element("description")?.Value.Trim() ?? "暂无内容"),
                 Url = item.Element("link")?.Value.Trim() ?? string.Empty,
                 PublishDate = TryParseDate(
-                    item.Element("pubDate")?.Value),
+                    item.Element("pubDate")?.Value)
             })
             .ToList();
     }
@@ -282,15 +276,22 @@ public partial class NewsService : INewsService
             : DateTime.UtcNow;
     }
 
-    [System.Text.RegularExpressions.GeneratedRegex(@"</?(?:br|p|div|li|h[1-6])(?:\s[^>]*)?>")]
-    private static partial System.Text.RegularExpressions.Regex MyRegex();
+    [GeneratedRegex(@"</?(?:br|p|div|li|h[1-6])(?:\s[^>]*)?>")]
+    private static partial Regex MyRegex();
 
-    [System.Text.RegularExpressions.GeneratedRegex("<[^>]*>")]
-    private static partial System.Text.RegularExpressions.Regex MyRegex1();
+    [GeneratedRegex("<[^>]*>")]
+    private static partial Regex MyRegex1();
 
-    [System.Text.RegularExpressions.GeneratedRegex(@"[^\S\n]+")]
-    private static partial System.Text.RegularExpressions.Regex MyRegex2();
+    [GeneratedRegex(@"[^\S\n]+")]
+    private static partial Regex MyRegex2();
 
-    [System.Text.RegularExpressions.GeneratedRegex(@"\n{3,}")]
-    private static partial System.Text.RegularExpressions.Regex MyRegex3();
+    [GeneratedRegex(@"\n{3,}")]
+    private static partial Regex MyRegex3();
+
+    private class CacheEntry
+    {
+        public List<NewsItem> Items { get; init; } = [];
+        public DateTime CachedAt { get; } = DateTime.UtcNow;
+        public bool IsValid => DateTime.UtcNow - CachedAt < MemCacheDuration;
+    }
 }

@@ -1,27 +1,25 @@
-using System;
-using System.Collections.Generic;
-using System.IO;
 using System.Text.Json;
+using Microsoft.Win32;
 
 namespace ChipLauncher.Services;
 
 /// <summary>
-/// 读取游戏本地化文件（zh-CN.json）并提取指定键的文本
-/// 支持：
-///   - 顶层键（string 值）
-///   - "main" 子对象中的键（string 值）
-///   - "character" 数组中的对话场景（从数组随机取一行）
+///     读取游戏本地化文件（zh-CN.json）并提取指定键的文本
+///     支持：
+///     - 顶层键（string 值）
+///     - "main" 子对象中的键（string 值）
+///     - "character" 数组中的对话场景（从数组随机取一行）
 /// </summary>
 public static class GameLocalization
 {
     /// <summary>要提取的键列表（只显示这些键对应的文本）</summary>
     /// <remarks>
-    /// 键的来源：
-    ///   顶层键：如 "startlorenote"、"name"
-    ///   对话场景键（character[] 中每个对象的字段名）：
+    ///     键的来源：
+    ///     顶层键：如 "startlorenote"、"name"
+    ///     对话场景键（character[] 中每个对象的字段名）：
     ///     如 "seeGravel"、"hungry"、"thirsty"、"tired"、"confused"、"eatGood"、"wakeup" 等
     ///     可在 CasualtiesUnknown_Data\Lang\zh-CN.json 中查看实际键名
-    /// 提示：对话场景键会从数组中随机选取一行显示
+    ///     提示：对话场景键会从数组中随机选取一行显示
     /// </remarks>
     private static readonly string[] DisplayKeys =
     [
@@ -39,7 +37,7 @@ public static class GameLocalization
         "bleeding",
         "sad",
         "seecorpse",
-        "steponglass",
+        "steponglass"
     ];
 
     /// <summary>缓存的根 JSON 文档</summary>
@@ -76,7 +74,7 @@ public static class GameLocalization
         try
         {
             // 从注册表获取 Steam 安装目录
-            using var steamKey = Microsoft.Win32.Registry.CurrentUser
+            using var steamKey = Registry.CurrentUser
                 .OpenSubKey(@"Software\Valve\Steam");
             var steamPath = steamKey?.GetValue("SteamPath")?.ToString();
             if (string.IsNullOrEmpty(steamPath)) return null;
@@ -119,9 +117,7 @@ public static class GameLocalization
                      let dataDir = Path.Combine(dir, "CasualtiesUnknown_Data")
                      where Directory.Exists(dataDir)
                      select dir)
-            {
                 return dir;
-            }
 
             Logger.Warn("在所有 Steam 库中未找到 CasualtiesUnknown_Data 目录");
         }
@@ -160,9 +156,7 @@ public static class GameLocalization
         {
             // 检查文件缓存
             if (_cachedDoc != null && DateTime.UtcNow - _lastRead < CacheDuration)
-            {
                 return ExtractDisplayTexts(_cachedDoc, result);
-            }
 
             var jsonPath = GetJsonPath();
             if (jsonPath == null) return result;
@@ -199,11 +193,11 @@ public static class GameLocalization
     }
 
     /// <summary>
-    /// 在 JSON 中递归查找指定键对应的文本：
-    ///   1. 顶层直接匹配 → string → 直接返回
-    ///   2. "main" 子对象中匹配 → string → 直接返回
-    ///   3. "character" 数组中匹配 → 数组 → 随机取一行
-    ///   4. 如果未找到且在 character 数组中 → 跳过（可能是不含此键的角色对象）
+    ///     在 JSON 中递归查找指定键对应的文本：
+    ///     1. 顶层直接匹配 → string → 直接返回
+    ///     2. "main" 子对象中匹配 → string → 直接返回
+    ///     3. "character" 数组中匹配 → 数组 → 随机取一行
+    ///     4. 如果未找到且在 character 数组中 → 跳过（可能是不含此键的角色对象）
     /// </summary>
     private static string? FindText(JsonElement root, string key)
     {
@@ -217,26 +211,20 @@ public static class GameLocalization
 
         // 2. "main" 子对象中匹配
         if (root.TryGetProperty("main", out var mainObj) && mainObj.ValueKind == JsonValueKind.Object)
-        {
             if (mainObj.TryGetProperty(key, out var mainValue))
             {
                 var text = ExtractStringValue(mainValue);
                 if (text != null) return text;
             }
-        }
 
         // 3. "character" 数组中匹配（每个角色对象的对话场景）
         if (!root.TryGetProperty("character", out var charArray) ||
             charArray.ValueKind != JsonValueKind.Array) return null;
         foreach (var charObj in charArray.EnumerateArray()
                      .Where(charObj => charObj.ValueKind == JsonValueKind.Object))
-        {
             if (charObj.TryGetProperty(key, out var dialogueArray) &&
                 dialogueArray.ValueKind == JsonValueKind.Array)
-            {
                 return PickRandomLine(dialogueArray);
-            }
-        }
 
         return null;
     }
@@ -248,7 +236,7 @@ public static class GameLocalization
         {
             JsonValueKind.String => element.GetString(),
             JsonValueKind.Array => PickRandomLine(element),
-            _ => null,
+            _ => null
         };
     }
 

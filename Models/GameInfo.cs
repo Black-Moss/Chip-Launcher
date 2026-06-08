@@ -1,7 +1,7 @@
 namespace ChipLauncher.Models;
 
 /// <summary>
-/// 游戏信息模型
+///     游戏信息模型
 /// </summary>
 public class GameInfo
 {

@@ -1,8 +1,4 @@
-using System;
-using System.Collections.Generic;
 using System.Globalization;
-using System.IO;
-using System.Linq;
 using Avalonia.Controls;
 using Avalonia.Data.Converters;
 using Avalonia.Interactivity;
@@ -13,48 +9,51 @@ using ChipLauncher.Services;
 namespace ChipLauncher.Views;
 
 /// <summary>
-/// 模组管理页面 — 扫描 BepInEx\plugins 子目录，支持启用/禁用切换和配置编辑
+///     模组管理页面 — 扫描 BepInEx\plugins 子目录，支持启用/禁用切换和配置编辑
 /// </summary>
 public partial class ModsPage : UserControl
 {
     // ── 值转换器 ──────────────────────────────────────────────
 
     /// <summary>启用/禁用 → 状态圆点颜色</summary>
-    public static readonly IValueConverter ColorConverter = new FuncConverter<bool, IBrush>(
-        convert: enabled => enabled ? new SolidColorBrush(Color.Parse("#4CAF50"))
-                                    : new SolidColorBrush(Color.Parse("#888888"))
+    public static readonly IValueConverter ColorConverter = new FuncConverter<bool, IBrush>(enabled => enabled
+        ? new SolidColorBrush(Color.Parse("#4CAF50"))
+        : new SolidColorBrush(Color.Parse("#888888"))
     );
 
     /// <summary>启用/禁用 → 状态文本</summary>
-    public static readonly IValueConverter StatusTextConverter = new FuncConverter<bool, string>(
-        convert: enabled => enabled ? "已启用" : "已禁用"
-    );
+    public static readonly IValueConverter StatusTextConverter =
+        new FuncConverter<bool, string>(enabled => enabled ? "已启用" : "已禁用"
+        );
 
     /// <summary>启用/禁用 → 按钮文本</summary>
-    public static readonly IValueConverter ToggleTextConverter = new FuncConverter<bool, string>(
-        convert: enabled => enabled ? "禁用" : "启用"
-    );
+    public static readonly IValueConverter ToggleTextConverter =
+        new FuncConverter<bool, string>(enabled => enabled ? "禁用" : "启用"
+        );
 
     /// <summary>SettingType → 是否为 Boolean（控制开关可见性）</summary>
-    public static readonly IValueConverter IsBooleanConverter = new FuncConverter<string, bool>(
-        convert: settingType => string.Equals(settingType, "Boolean", StringComparison.OrdinalIgnoreCase)
-    );
+    public static readonly IValueConverter IsBooleanConverter =
+        new FuncConverter<string, bool>(settingType =>
+            string.Equals(settingType, "Boolean", StringComparison.OrdinalIgnoreCase)
+        );
 
     /// <summary>SettingType → 是否非 Boolean（控制文本框可见性）</summary>
-    public static readonly IValueConverter IsNotBooleanConverter = new FuncConverter<string, bool>(
-        convert: settingType => !string.Equals(settingType, "Boolean", StringComparison.OrdinalIgnoreCase)
-    );
+    public static readonly IValueConverter IsNotBooleanConverter =
+        new FuncConverter<string, bool>(settingType =>
+            !string.Equals(settingType, "Boolean", StringComparison.OrdinalIgnoreCase)
+        );
 
     /// <summary>Value (string) ↔ bool（ToggleSwitch 双向绑定）</summary>
     public static readonly IValueConverter StringToBoolConverter = new FuncConverter<string, bool>(
-        convert: value => string.Equals(value, "true", StringComparison.OrdinalIgnoreCase),
-        convertBack: b => b ? "true" : "false"
+        value => string.Equals(value, "true", StringComparison.OrdinalIgnoreCase),
+        b => b ? "true" : "false"
     );
+
+    private BepInExConfig? _currentConfig;
 
     // ── 字段 ──────────────────────────────────────────────────
 
     private string? _gameDir;
-    private BepInExConfig? _currentConfig;
 
     // ── 页面逻辑 ──────────────────────────────────────────────
 
@@ -96,21 +95,19 @@ public partial class ModsPage : UserControl
                     {
                         Name = Path.GetFileName(dir),
                         DirectoryPath = dir,
-                        PluginFilePath = dllFiles[0],
+                        PluginFilePath = dllFiles[0]
                     });
                     continue;
                 }
 
                 var disabledFiles = Directory.GetFiles(dir, "*.disabled");
                 if (disabledFiles.Length > 0)
-                {
                     mods.Add(new ModInfo
                     {
                         Name = Path.GetFileName(dir),
                         DirectoryPath = dir,
-                        PluginFilePath = disabledFiles[0],
+                        PluginFilePath = disabledFiles[0]
                     });
-                }
             }
 
             mods.Sort((a, b) => string.Compare(a.Name, b.Name, StringComparison.OrdinalIgnoreCase));
@@ -136,15 +133,11 @@ public partial class ModsPage : UserControl
             string newFile;
 
             if (mod.IsEnabled)
-            {
                 newFile = Path.ChangeExtension(oldFile, ".disabled");
-            }
             else
-            {
                 newFile = Path.ChangeExtension(oldFile, ".dll");
-            }
 
-            File.Move(oldFile, newFile, overwrite: true);
+            File.Move(oldFile, newFile, true);
             Logger.Info($"模组 {(mod.IsEnabled ? "禁用" : "启用")}: {mod.Name}");
 
             // 清除右侧配置（避免选中项漂移）
@@ -175,7 +168,7 @@ public partial class ModsPage : UserControl
         var configDir = Path.Combine(_gameDir, "BepInEx", "config");
         if (!Directory.Exists(configDir))
         {
-            ShowConfigUnavailable($"未找到 BepInEx\\config 目录");
+            ShowConfigUnavailable("未找到 BepInEx\\config 目录");
             return;
         }
 
@@ -263,7 +256,7 @@ public partial class ModsPage : UserControl
             SaveStatus.IsVisible = true;
 
             // 3 秒后隐藏提示
-            await System.Threading.Tasks.Task.Delay(3000);
+            await Task.Delay(3000);
             SaveStatus.IsVisible = false;
         }
         else
@@ -284,7 +277,7 @@ public partial class ModsPage : UserControl
 }
 
 /// <summary>
-/// 简单的 FuncConverter，将 Lambda 转换为 IValueConverter
+///     简单的 FuncConverter，将 Lambda 转换为 IValueConverter
 /// </summary>
 public class FuncConverter<TIn, TOut> : IValueConverter
 {
