@@ -96,7 +96,8 @@
                        Foreground="{StaticResource TextSecondaryBrush}"
                        FontSize="14"
                        VerticalAlignment="Center" />
-            <ComboBox Grid.Column="1"
+            <ComboBox Name="StartupPageCombo"
+                      Grid.Column="1"
                       SelectedIndex="{Binding DefaultPageIndex, Source={x:Static services:AppConfig.Instance}, Mode=TwoWay}"
                       FontSize="14"
                       Padding="5,4">
@@ -106,14 +107,14 @@
                 <ComboBoxItem Content="ℹ 关于" />
             </ComboBox>
             <TextBlock Grid.Column="2"
-                       Text="(启动时默认显示的页面，0=资讯 1=模组 2=下载 3=设置 4=关于)"
+                       Text="启动时默认显示的页面"
                        Foreground="{StaticResource TextSecondaryBrush}"
                        FontSize="12"
                        Opacity="0.5"
                        VerticalAlignment="Center"
                        Margin="8,0,0,0" />
         </Grid>
-        
+
         <!-- 删除模组确认 -->
         <Grid Grid.Row="7" Margin="0,0,0,12" ColumnDefinitions="100,120,*"
               Name="SettingsDeleteConfirmRow">
@@ -126,7 +127,7 @@
                           OnContent="开启"
                           OffContent="关闭" />
             <TextBlock Grid.Column="2"
-                       Text="(删除模组前显示二次确认对话框)"
+                       Text="删除模组前显示二次确认对话框"
                        Foreground="{StaticResource TextSecondaryBrush}"
                        FontSize="12"
                        Opacity="0.5"

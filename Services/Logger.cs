@@ -32,7 +32,8 @@ public static class Logger
         if (!Directory.Exists(LogDir))
             Directory.CreateDirectory(LogDir);
 
-        LogFile = Path.Combine(LogDir, $"{DateTime.Now:yy-MM-dd.HH:mm:ss}.txt");
+        // 注意：Windows 文件名不允许冒号，因此使用连字符替代
+        LogFile = Path.Combine(LogDir, $"{DateTime.Now:yy-MM-dd.HH-mm-ss}.txt");
 
         // 打开 stdout 原始字节流，直接写入 UTF-8 绕过编码问题
         try

@@ -84,16 +84,22 @@ public partial class MainWindow : SukiWindow
     protected override void OnOpened(EventArgs e)
     {
         base.OnOpened(e);
-        TransparencyLevelHint = new[] { WindowTransparencyLevel.None };
+        TransparencyLevelHint = [WindowTransparencyLevel.None];
 
         // 确保 SukiSideMenu 完全初始化后再设置默认选中页
         var defaultPage = AppConfig.Instance.DefaultPage;
         SelectSideMenuItem(defaultPage);
     }
 
-    /// <summary>根据配置选择 SukiSideMenu 默认项</summary>
+    /// <summary>根据配置选择 SukiSideMenu 默认项，先取消所有项选中</summary>
     private void SelectSideMenuItem(string page)
     {
+        // 先取消所有侧边栏项的选中状态，防止 SukiSideMenu 默认选中第一项
+        SideMenuMods.IsSelected = false;
+        SideMenuNews.IsSelected = false;
+        SideMenuSettings.IsSelected = false;
+        SideMenuAbout.IsSelected = false;
+
         var target = page switch
         {
             "Mods" => SideMenuMods,

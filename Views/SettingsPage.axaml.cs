@@ -1,8 +1,10 @@
 using System.Diagnostics;
+using Avalonia;
 using Avalonia.Controls;
 using Avalonia.Interactivity;
 using Avalonia.Platform.Storage;
 using ChipLauncher.Services;
+using SukiUI.Controls;
 
 namespace ChipLauncher.Views;
 
@@ -15,6 +17,10 @@ public partial class SettingsPage : UserControl
     {
         InitializeComponent();
         SettingsSearchBox.TextChanged += OnSettingsSearchChanged;
+
+        // 启动页面 ComboBox 下拉关闭后，确保设置页侧边栏项仍然选中
+        // （防止 SukiSideMenu 在下拉交互中误触其他菜单项）
+        StartupPageCombo.DropDownClosed += OnStartupPageComboDropDownClosed;
     }
 
     /// <summary>搜索框文本变化 → 筛选显示匹配的设置项</summary>
@@ -78,5 +84,20 @@ public partial class SettingsPage : UserControl
         });
 
         if (files.Count > 0) AppConfig.Instance.GamePath = files[0].Path.LocalPath;
+    }
+
+    /// <summary>
+    ///     ComboBox 下拉关闭后，重新确保"设置"侧边栏项处于选中状态。
+    ///     防止 SukiSideMenu 在下拉交互中误触其他菜单项（如模组管理）。
+    /// </summary>
+    private void OnStartupPageComboDropDownClosed(object? sender, EventArgs e)
+    {
+        // 通过视觉树找到主窗口，重新设置"设置"侧边栏项为选中
+        if (TopLevel.GetTopLevel(this) is SukiWindow window)
+        {
+            var sideMenuSettings = window.FindControl<SukiSideMenuItem>("SideMenuSettings");
+            if (sideMenuSettings != null && !sideMenuSettings.IsSelected)
+                sideMenuSettings.IsSelected = true;
+        }
     }
 }

@@ -11,9 +11,7 @@
     </PropertyGroup>
 
     <ItemGroup>
-        <Content Include="ChipLauncher.ico">
-            <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
-        </Content>
+        <EmbeddedResource Include="ChipLauncher.ico" />
     </ItemGroup>
 
     <ItemGroup>

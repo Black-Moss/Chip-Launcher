@@ -28,14 +28,21 @@ public partial class AboutPage : UserControl
         LoadAppIcon();
     }
 
-    /// <summary>加载 ICO 文件并显示在关于页</summary>
+    /// <summary>从嵌入资源加载 ICO 文件并显示在关于页</summary>
     private void LoadAppIcon()
     {
         try
         {
-            var icoPath = System.IO.Path.Combine(
-                AppContext.BaseDirectory, "ChipLauncher.ico");
-            if (!System.IO.File.Exists(icoPath)) return;
+            var assembly = Assembly.GetExecutingAssembly();
+            // 嵌入资源名为: {DefaultNamespace}.{FileName}
+            // 项目默认命名空间为 ChipLauncher，文件名为 ChipLauncher.ico
+            const string resourceName = "ChipLauncher.ChipLauncher.ico";
+            using var stream = assembly.GetManifestResourceStream(resourceName);
+            if (stream == null) return;
+
+            var data = new byte[stream.Length];
+            var read = stream.Read(data, 0, data.Length);
+            if (read == 0) return;
 
             // ICO 文件格式:
             //   字节 0-1: 保留 (0)
@@ -47,7 +54,6 @@ public partial class AboutPage : UserControl
             //     字节 6-7: 位深
             //     字节 8-11: 图像数据大小 (LittleEndian int32)
             //     字节 12-15: 图像数据偏移量 (LittleEndian int32)
-            var data = System.IO.File.ReadAllBytes(icoPath);
             var count = BitConverter.ToInt16(data, 4);
             if (count == 0) return;
 
@@ -58,7 +64,7 @@ public partial class AboutPage : UserControl
 
             // ICO 内嵌的图像可能是 PNG 或 BMP DIB。尝试直接解码，
             // 若失败则直接用 WriteableBitmap 写入原始 BGRA 像素（保留 alpha）。
-            using (var ms = new System.IO.MemoryStream(data, imageOffset, imageSize))
+            using (var ms = new MemoryStream(data, imageOffset, imageSize))
             {
                 try
                 {
@@ -85,8 +91,8 @@ public partial class AboutPage : UserControl
             var writeableBitmap = new WriteableBitmap(
                 new Avalonia.PixelSize(biWidth, actualHeight),
                 new Avalonia.Vector(96, 96),
-                Avalonia.Platform.PixelFormat.Bgra8888,
-                Avalonia.Platform.AlphaFormat.Unpremul);
+                PixelFormat.Bgra8888,
+                AlphaFormat.Unpremul);
 
             using (var locked = writeableBitmap.Lock())
             {
