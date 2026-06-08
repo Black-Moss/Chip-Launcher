@@ -12,7 +12,7 @@
             Background="#000000"
             ClipToBounds="True">
 
-        <Grid RowDefinitions="90,*" ColumnDefinitions="200,*">
+        <Grid RowDefinitions="90,*" ColumnDefinitions="160,*">
 
             <!-- 顶部标题栏（拖拽区域） -->
             <Border Name="TitleBar"
@@ -86,43 +86,59 @@
             <!-- 左侧导航栏 -->
             <Border Grid.Row="1" Grid.Column="0"
                     Background="#000000">
-                <StackPanel>
-                    <Button Name="BtnPlay" Content="⏬ 启动游戏"
+                <StackPanel HorizontalAlignment="Stretch">
+                    <Button Name="BtnPlay"
                             Background="Transparent"
                             Foreground="#CCCCCC"
                             FontSize="15"
-                            Padding="15,12"
+                            Padding="10,12"
                             Margin="0,2"
                             Cursor="Hand"
                             BorderThickness="0"
-                            HorizontalContentAlignment="Left" />
-                    <Button Name="BtnMods" Content="📦 模组管理"
+                            HorizontalContentAlignment="Stretch">
+                        <TextBlock Text="⏬ 启动游戏"
+                                   TextAlignment="Center"
+                                   HorizontalAlignment="Stretch" />
+                    </Button>
+                    <Button Name="BtnMods"
                             Background="Transparent"
                             Foreground="#CCCCCC"
                             FontSize="15"
-                            Padding="15,12"
+                            Padding="10,12"
                             Margin="0,2"
                             Cursor="Hand"
                             BorderThickness="0"
-                            HorizontalContentAlignment="Left" />
-                    <Button Name="BtnNews" Content="📰 游戏资讯"
+                            HorizontalContentAlignment="Stretch">
+                        <TextBlock Text="📦 模组管理"
+                                   TextAlignment="Center"
+                                   HorizontalAlignment="Stretch" />
+                    </Button>
+                    <Button Name="BtnNews"
                             Background="Transparent"
                             Foreground="#CCCCCC"
                             FontSize="15"
-                            Padding="15,12"
+                            Padding="10,12"
                             Margin="0,2"
                             Cursor="Hand"
                             BorderThickness="0"
-                            HorizontalContentAlignment="Left" />
-                    <Button Name="BtnSettings" Content="⚙ 设置"
+                            HorizontalContentAlignment="Stretch">
+                        <TextBlock Text="📰 游戏资讯"
+                                   TextAlignment="Center"
+                                   HorizontalAlignment="Stretch" />
+                    </Button>
+                    <Button Name="BtnSettings"
                             Background="Transparent"
                             Foreground="#CCCCCC"
                             FontSize="15"
-                            Padding="15,12"
+                            Padding="10,12"
                             Margin="0,2"
                             Cursor="Hand"
                             BorderThickness="0"
-                            HorizontalContentAlignment="Left" />
+                            HorizontalContentAlignment="Stretch">
+                        <TextBlock Text="⚙ 设置"
+                                   TextAlignment="Center"
+                                   HorizontalAlignment="Stretch" />
+                    </Button>
                 </StackPanel>
             </Border>
 

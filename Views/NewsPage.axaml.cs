@@ -65,6 +65,13 @@ public partial class NewsPage : UserControl
     {
         NewsListBox.ItemsSource = items;
 
+        // 先注册事件，再设置选中项，确保第一次选中时也能触发详情显示
+        if (!_selectionHooked)
+        {
+            _selectionHooked = true;
+            NewsListBox.SelectionChanged += (_, _) => OnSelectionChanged();
+        }
+
         if (items.Count > 0)
         {
             NewsListBox.SelectedIndex = 0;
@@ -73,10 +80,6 @@ public partial class NewsPage : UserControl
         {
             ContentText.Text = "暂无资讯。";
         }
-
-        if (_selectionHooked) return;
-        _selectionHooked = true;
-        NewsListBox.SelectionChanged += (_, _) => OnSelectionChanged();
     }
 
     /// <summary>列表选中项改变 → 更新详情 + 原文按钮</summary>
