@@ -1,0 +1,122 @@
+<UserControl xmlns="https://github.com/avaloniaui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             x:Class="ChipLauncher.Views.AboutPage">
+    <Grid Margin="15">
+        <StackPanel VerticalAlignment="Center"
+                    HorizontalAlignment="Center"
+                    Spacing="8">
+
+            <!-- 图标 -->
+            <Image Name="AppIcon"
+                   Width="64" Height="64"
+                   HorizontalAlignment="Center"
+                   Margin="0,0,0,4" />
+
+            <!-- 标题 -->
+            <TextBlock Text="Chip Launcher"
+                       FontSize="28"
+                       FontWeight="Bold"
+                       Foreground="White"
+                       HorizontalAlignment="Center" />
+
+            <!-- 版本号 -->
+            <TextBlock Name="VersionText"
+                       FontSize="14"
+                       Foreground="#888"
+                       HorizontalAlignment="Center" />
+
+            <!-- 分割线 -->
+            <Border Height="1"
+                    Background="{StaticResource BorderBrush}"
+                    Margin="40,8"
+                    Opacity="0.3" />
+
+            <!-- 描述 -->
+            <TextBlock Text="一个简洁的游戏模组启动器，支持 BepInEx 模组管理、配置编辑和 Steam 资讯浏览。"
+                       FontSize="13"
+                       Foreground="#aaa"
+                       TextWrapping="Wrap"
+                       HorizontalAlignment="Center"
+                       MaxWidth="360"
+                       TextAlignment="Center"
+                       LineHeight="20" />
+
+            <!-- 分割线 -->
+            <Border Height="1"
+                    Background="{StaticResource BorderBrush}"
+                    Margin="40,8"
+                    Opacity="0.3" />
+
+            <!-- 功能列表 -->
+            <StackPanel Spacing="6" Margin="0,4,0,0">
+                <TextBlock Text="📦 模组管理 — 安装、启用/禁用、删除、批量操作"
+                           FontSize="12" Foreground="#888" HorizontalAlignment="Center" />
+                <TextBlock Text="⚙ 配置编辑 — 可视化编辑 BepInEx 配置文件"
+                           FontSize="12" Foreground="#888" HorizontalAlignment="Center" />
+                <TextBlock Text="📰 游戏资讯 — 自动获取 Steam 最新动态"
+                           FontSize="12" Foreground="#888" HorizontalAlignment="Center" />
+                <TextBlock Text="🎮 游戏启动 — 一键启动游戏（Steam / 本地路径）"
+                           FontSize="12" Foreground="#888" HorizontalAlignment="Center" />
+                <TextBlock Text="🔄 拖放安装 — 拖拽 DLL 或压缩包即可安装模组"
+                           FontSize="12" Foreground="#888" HorizontalAlignment="Center" />
+            </StackPanel>
+
+            <!-- 分割线 -->
+            <Border Height="1"
+                    Background="{StaticResource BorderBrush}"
+                    Margin="40,8"
+                    Opacity="0.3" />
+
+            <!-- 技术栈 -->
+            <StackPanel HorizontalAlignment="Center"
+                        Spacing="2"
+                        Margin="0,4,0,0">
+                <TextBlock FontSize="11"
+                           Foreground="#666"
+                           HorizontalAlignment="Center"
+                           TextAlignment="Center">
+                    <Run Name="BuildInfoText" Text="" />
+                </TextBlock>
+                <StackPanel Orientation="Horizontal"
+                            HorizontalAlignment="Center"
+                            Spacing="6">
+                    <Border Background="Transparent"
+                            Cursor="Hand"
+                            PointerPressed="OnLinkClick"
+                            Tag="https://avaloniaui.net/">
+                        <TextBlock Text="Avalonia Framework"
+                                   FontSize="11"
+                                   Foreground="#5599ff" />
+                    </Border>
+                    <TextBlock Text="·" FontSize="11" Foreground="#555" VerticalAlignment="Center" />
+                    <Border Background="Transparent"
+                            Cursor="Hand"
+                            PointerPressed="OnLinkClick"
+                            Tag="https://dotnet.microsoft.com/">
+                        <TextBlock Text=".NET 8"
+                                   FontSize="11"
+                                   Foreground="#5599ff" />
+                    </Border>
+                    <TextBlock Text="·" FontSize="11" Foreground="#555" VerticalAlignment="Center" />
+                    <Border Background="Transparent"
+                            Cursor="Hand"
+                            PointerPressed="OnLinkClick"
+                            Tag="https://github.com/adamhathcock/sharpcompress">
+                        <TextBlock Text="SharpCompress"
+                                   FontSize="11"
+                                   Foreground="#5599ff" />
+                    </Border>
+                    <TextBlock Text="·" FontSize="11" Foreground="#555" VerticalAlignment="Center" />
+                    <Border Background="Transparent"
+                            Cursor="Hand"
+                            PointerPressed="OnLinkClick"
+                            Tag="https://github.com/kikipoulet/SukiUI">
+                        <TextBlock Text="SukiUI"
+                                   FontSize="11"
+                                   Foreground="#5599ff" />
+                    </Border>
+                </StackPanel>
+            </StackPanel>
+        </StackPanel>
+    </Grid>
+</UserControl>

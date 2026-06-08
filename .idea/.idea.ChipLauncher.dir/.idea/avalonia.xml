@@ -5,6 +5,8 @@
       <map>
         <entry key="App.axaml" value="ChipLauncher.csproj" />
         <entry key="Styles/Styles.axaml" value="ChipLauncher.csproj" />
+        <entry key="Views/AboutPage.axaml" value="ChipLauncher.csproj" />
+        <entry key="Views/AboutWindow.axaml" value="ChipLauncher.csproj" />
         <entry key="Views/MainWindow.axaml" value="ChipLauncher.csproj" />
         <entry key="Views/ModDownloadPage.axaml" value="ChipLauncher.csproj" />
         <entry key="Views/ModsPage.axaml" value="ChipLauncher.csproj" />

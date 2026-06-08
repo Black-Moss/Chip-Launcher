@@ -25,12 +25,17 @@ public partial class MainWindow : Window
     private DispatcherTimer? _textTimer;
 
     // ── Toast 通知系统 ─────────────────────────────────────────
-    private readonly ObservableCollection<ToastItem> _toasts = new();
+    private readonly ObservableCollection<ToastItem> _toasts = [];
 
     public MainWindow()
     {
         InitializeComponent();
         Logger.Info("Chip Launcher 启动");
+
+        // 设置窗口图标
+        var iconPath = Path.Combine(AppContext.BaseDirectory, "ChipLauncher.ico");
+        if (File.Exists(iconPath))
+            Icon = new WindowIcon(iconPath);
 
         _gameService = new GameService();
 
@@ -54,23 +59,21 @@ public partial class MainWindow : Window
         {
             var toast = new ToastItem(message, type);
             _toasts.Insert(0, toast);
-            toast.StartFadeOut(() =>
-            {
-                Dispatcher.UIThread.Post(() => _toasts.Remove(toast));
-            });
+            toast.StartFadeOut(() => { Dispatcher.UIThread.Post(() => _toasts.Remove(toast)); });
         };
 
-        // 导航按钮事件（使用 PointerPressed 替代 Click，因为 Border 没有 Click 事件）
         BtnPlay.PointerPressed += (_, _) => LaunchGame();
         BtnMods.PointerPressed += (_, _) => NavigateTo("Mods", () => new ModsPage());
         BtnNews.PointerPressed += (_, _) => NavigateTo("News", () => new NewsPage());
         BtnSettings.PointerPressed += (_, _) => NavigateTo("Settings", () => new SettingsPage());
+        BtnAbout.PointerPressed += (_, _) => NavigateTo("About", () => new AboutPage());
 
         // 根据配置显示默认页面
         var defaultPage = AppConfig.Instance.DefaultPage;
         ContentFrame.Content = defaultPage switch
         {
             "Mods" => new ModsPage(),
+            "About" => new AboutPage(),
             "Settings" => new SettingsPage(),
             _ => new NewsPage()
         };
@@ -348,9 +351,9 @@ public partial class MainWindow : Window
 
     // ── 导航栏统一样式 ──────────────────────────────────────────
 
-    private static readonly Brush NavHoverBg = new SolidColorBrush(Color.FromRgb(42, 42, 42));     // 鼠标悬浮：灰背景
-    private static readonly Brush NavSelectedBg = new SolidColorBrush(Color.FromRgb(51, 51, 51));   // 选中：淡灰背景
-    private static readonly Brush NavNormalBg = new SolidColorBrush(Colors.Transparent);             // 普通：透明背景
+    private static readonly Brush NavHoverBg = new SolidColorBrush(Color.FromRgb(42, 42, 42)); // 鼠标悬浮：灰背景
+    private static readonly Brush NavSelectedBg = new SolidColorBrush(Color.FromRgb(51, 51, 51)); // 选中：淡灰背景
+    private static readonly Brush NavNormalBg = new SolidColorBrush(Colors.Transparent); // 普通：透明背景
     private static readonly Brush NavSelectedText = new SolidColorBrush(Colors.White);
     private static readonly Brush NavNormalText = new SolidColorBrush(Color.FromRgb(204, 204, 204));
 
@@ -367,8 +370,9 @@ public partial class MainWindow : Window
         if (sender is not Border border) return;
 
         var isSelected = (border == BtnMods && _currentNav == "Mods")
-                      || (border == BtnNews && _currentNav == "News")
-                      || (border == BtnSettings && _currentNav == "Settings");
+                         || (border == BtnNews && _currentNav == "News")
+                         || (border == BtnSettings && _currentNav == "Settings")
+                         || (border == BtnAbout && _currentNav == "About");
 
         border.Background = isSelected ? NavSelectedBg : NavNormalBg;
     }
@@ -381,6 +385,7 @@ public partial class MainWindow : Window
         ResetNavStyle(BtnMods);
         ResetNavStyle(BtnNews);
         ResetNavStyle(BtnSettings);
+        ResetNavStyle(BtnAbout);
 
         // 高亮当前页面按钮
         var target = page switch
@@ -388,6 +393,7 @@ public partial class MainWindow : Window
             "Mods" => BtnMods,
             "News" => BtnNews,
             "Settings" => BtnSettings,
+            "About" => BtnAbout,
             _ => null
         };
 
@@ -450,8 +456,8 @@ public class ToastItem : INotifyPropertyChanged
         {
             NotificationType.Success => ("#4CAF50", "#cc1a3a1a"),
             NotificationType.Warning => ("#e67e22", "#cc3d1a00"),
-            NotificationType.Error   => ("#e74c3c", "#cc3d0000"),
-            _                        => ("#ffffff", "#cc000000")
+            NotificationType.Error => ("#e74c3c", "#cc3d0000"),
+            _ => ("#ffffff", "#cc000000")
         };
         TextColor = new SolidColorBrush(Color.Parse(textHex));
         BackgroundColor = new SolidColorBrush(Color.Parse(bgHex));

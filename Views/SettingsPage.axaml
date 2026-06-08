@@ -106,9 +106,10 @@
                 <ComboBoxItem Content="📰 游戏资讯" />
                 <ComboBoxItem Content="📦 模组管理" />
                 <ComboBoxItem Content="⚙ 设置" />
+                <ComboBoxItem Content="ℹ 关于" />
             </ComboBox>
             <TextBlock Grid.Column="2"
-                       Text="(启动时默认显示的页面，0=资讯 1=模组 2=下载 3=设置)"
+                       Text="(启动时默认显示的页面，0=资讯 1=模组 2=下载 3=设置 4=关于)"
                        Foreground="{StaticResource TextSecondaryBrush}"
                        FontSize="12"
                        Opacity="0.5"

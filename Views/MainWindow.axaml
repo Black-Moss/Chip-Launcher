@@ -6,10 +6,7 @@
         WindowStartupLocation="CenterScreen"
         SystemDecorations="None"
         Background="#000000"
-        DragDrop.AllowDrop="True"
-        DragDrop.DragEnter="OnWindowDragEnter"
-        DragDrop.DragLeave="OnWindowDragLeave"
-        DragDrop.Drop="OnWindowDrop">
+        DragDrop.AllowDrop="True">
 
     <!-- 外层 Border：ClipToBounds 让圆角裁剪内容 -->
     <Border CornerRadius="10"
@@ -141,6 +138,19 @@
                                 PointerEntered="NavItemPointerEnter"
                                 PointerExited="NavItemPointerLeave">
                             <TextBlock Text="⚙ 设置"
+                                       FontSize="15"
+                                       Foreground="#CCCCCC"
+                                       TextAlignment="Center"
+                                       HorizontalAlignment="Stretch" />
+                        </Border>
+                        <Border Name="BtnAbout"
+                                Background="Transparent"
+                                Padding="15,12"
+                                Margin="0,2"
+                                Cursor="Hand"
+                                PointerEntered="NavItemPointerEnter"
+                                PointerExited="NavItemPointerLeave">
+                            <TextBlock Text="ℹ 关于"
                                        FontSize="15"
                                        Foreground="#CCCCCC"
                                        TextAlignment="Center"
