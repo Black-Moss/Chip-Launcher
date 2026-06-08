@@ -609,7 +609,7 @@ public partial class ModsPage : UserControl
         _gameDir = GameLocalization.GetGameDirectory();
         if (string.IsNullOrEmpty(_gameDir))
         {
-            ShowConfigUnavailable("未找到游戏目录。");
+            ShowConfigUnavailable(mod, "未找到游戏目录。");
             return;
         }
 
@@ -630,6 +630,7 @@ public partial class ModsPage : UserControl
                     ConfigDescription.IsVisible = false;
                     ConfigItemsControl.ItemsSource = cfg.Entries;
                     BtnSaveConfig.IsVisible = true;
+                    BtnOpenConfig.IsVisible = true;
                     ConfigPanel.IsVisible = true;
                     NoSelectionHint.IsVisible = false;
                     return;
@@ -653,6 +654,7 @@ public partial class ModsPage : UserControl
                     ConfigDescription.IsVisible = false;
                     ConfigItemsControl.ItemsSource = cfg.Entries;
                     BtnSaveConfig.IsVisible = true;
+                    BtnOpenConfig.IsVisible = true;
                     ConfigPanel.IsVisible = true;
                     NoSelectionHint.IsVisible = false;
                     return;
@@ -660,7 +662,7 @@ public partial class ModsPage : UserControl
             }
         }
 
-        ShowConfigUnavailable("此模组没有配置文件。");
+        ShowConfigUnavailable(mod, "此模组没有配置文件。");
     }
 
     private void ShowConfigPanel(BepInExConfig config)
@@ -668,19 +670,24 @@ public partial class ModsPage : UserControl
         _currentConfig = config;
         ConfigItemsControl.ItemsSource = config.Entries;
         BtnSaveConfig.IsVisible = true;
+        BtnOpenConfig.IsVisible = true;
         ConfigPanel.IsVisible = true;
         NoSelectionHint.IsVisible = false;
     }
 
-    private void ShowConfigUnavailable(string reason)
+    private void ShowConfigUnavailable(ModInfo mod, string reason)
     {
         ClearConfigPanel();
+
+        // ClearConfigPanel 清空了 ConfigModName，此处恢复模组名
+        ConfigModName.Text = mod.Name;
 
         ConfigItemsControl.ItemsSource = null;
         ConfigFileName.IsVisible = false;
         ConfigDescription.Text = reason;
         ConfigDescription.IsVisible = true;
         BtnSaveConfig.IsVisible = false;
+        BtnOpenConfig.IsVisible = false;
         ConfigPanel.IsVisible = true;
         NoSelectionHint.IsVisible = false;
     }
@@ -690,6 +697,7 @@ public partial class ModsPage : UserControl
         ConfigPanel.IsVisible = false;
         NoSelectionHint.IsVisible = true;
         BtnSaveConfig.IsVisible = true;
+        BtnOpenConfig.IsVisible = true;
         _currentConfig = null;
         DeleteConfirmPanel.IsVisible = false;
         ConfigModName.Text = "";
