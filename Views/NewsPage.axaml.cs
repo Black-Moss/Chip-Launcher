@@ -1,5 +1,8 @@
+using System;
+using System.Collections.Generic;
 using System.Diagnostics;
-using System.Windows;
+using Avalonia.Controls;
+using Avalonia.Interactivity;
 using ChipLauncher.Models;
 using ChipLauncher.Services;
 
@@ -8,7 +11,7 @@ namespace ChipLauncher.Views;
 /// <summary>
 /// 游戏资讯页面 - 从 Steam RSS 获取新闻（支持加载状态 + 失败重试）
 /// </summary>
-public partial class NewsPage
+public partial class NewsPage : UserControl
 {
     private readonly INewsService _newsService;
     private bool _selectionHooked;
@@ -18,13 +21,16 @@ public partial class NewsPage
     {
         InitializeComponent();
         _newsService = new NewsService();
+
         Loaded += async (_, _) => await OnPageLoadedAsync();
+        OpenUrlButton.Click += OnOpenUrlClick;
+        // 重试按钮：通过 FindControl 查找（Avalonia 中 x:Name 在模板内可能不可直接访问）
+        RetryButton.Click += OnRetryClick;
     }
 
     /// <summary>页面加载时：优先使用缓存，无缓存则发起请求</summary>
     private async Task OnPageLoadedAsync()
     {
-        // 先检查是否有缓存（MainWindow 可能在启动时已预取）
         var cached = NewsService.TryGetCached("4576490");
         if (cached != null)
         {
@@ -32,7 +38,6 @@ public partial class NewsPage
             return;
         }
 
-        // 无缓存 → 发起请求（显示加载动画）
         await FetchNewsAsync();
     }
 
@@ -48,7 +53,7 @@ public partial class NewsPage
 
         if (result == null)
         {
-            ShowOverlay(ErrorOverlay, true); // 失败 → 重试按钮
+            ShowOverlay(ErrorOverlay, true);
             return;
         }
 
@@ -84,20 +89,18 @@ public partial class NewsPage
         ContentText.Text = item.Content;
 
         _currentUrl = item.Url;
-        OpenUrlButton.Visibility = string.IsNullOrEmpty(_currentUrl)
-            ? Visibility.Collapsed
-            : Visibility.Visible;
+        OpenUrlButton.IsVisible = !string.IsNullOrEmpty(_currentUrl);
     }
 
     /// <summary>显示/隐藏遮罩（同时隐藏/显示内容面板）</summary>
-    private void ShowOverlay(UIElement overlay, bool show)
+    private void ShowOverlay(Control overlay, bool show)
     {
-        overlay.Visibility = show ? Visibility.Visible : Visibility.Collapsed;
-        ContentPanel.Visibility = show ? Visibility.Collapsed : Visibility.Visible;
+        overlay.IsVisible = show;
+        ContentPanel.IsVisible = !show;
     }
 
     /// <summary>重试按钮点击</summary>
-    private async void OnRetryClick(object sender, RoutedEventArgs e)
+    private async void OnRetryClick(object? sender, RoutedEventArgs e)
     {
         try
         {
@@ -112,7 +115,7 @@ public partial class NewsPage
     }
 
     /// <summary>在浏览器中打开原文</summary>
-    private void OnOpenUrlClick(object sender, RoutedEventArgs e)
+    private void OnOpenUrlClick(object? sender, RoutedEventArgs e)
     {
         if (string.IsNullOrEmpty(_currentUrl)) return;
 
@@ -127,7 +130,7 @@ public partial class NewsPage
         }
         catch (Exception ex)
         {
-            Logger.Error($"打开原文失败", ex);
+            Logger.Error("打开原文失败", ex);
         }
     }
 }

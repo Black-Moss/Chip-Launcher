@@ -1,0 +1,15 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project version="4">
+  <component name="AvaloniaProject">
+    <option name="projectPerEditor">
+      <map>
+        <entry key="App.axaml" value="ChipLauncher.csproj" />
+        <entry key="Styles/Styles.axaml" value="ChipLauncher.csproj" />
+        <entry key="Views/MainWindow.axaml" value="ChipLauncher.csproj" />
+        <entry key="Views/ModsPage.axaml" value="ChipLauncher.csproj" />
+        <entry key="Views/NewsPage.axaml" value="ChipLauncher.csproj" />
+        <entry key="Views/SettingsPage.axaml" value="ChipLauncher.csproj" />
+      </map>
+    </option>
+  </component>
+</project>

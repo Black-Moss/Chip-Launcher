@@ -47,6 +47,20 @@ public class AppConfig : INotifyPropertyChanged
         }
     }
 
+    private int _textRotationInterval = 3;
+    /// <summary>标题栏游戏文本轮播间隔（秒，默认 3，范围 1~60）</summary>
+    public int TextRotationInterval
+    {
+        get => _textRotationInterval;
+        set
+        {
+            if (_textRotationInterval == value) return;
+            _textRotationInterval = Math.Clamp(value, 1, 60);
+            OnPropertyChanged();
+            Save();
+        }
+    }
+
     // ── 私有构造（防止外部 new，只能通过 Load 创建） ──────────
     [System.Text.Json.Serialization.JsonConstructor]
     private AppConfig() { }

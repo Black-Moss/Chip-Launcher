@@ -1,6 +1,6 @@
-﻿<UserControl x:Class="ChipLauncher.Views.ModsPage"
-             xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
-             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml">
+<UserControl xmlns="https://github.com/avaloniaui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             x:Class="ChipLauncher.Views.ModsPage">
     <Grid Margin="15">
         <Grid.RowDefinitions>
             <RowDefinition Height="Auto"/>

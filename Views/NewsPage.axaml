@@ -1,9 +1,9 @@
-<UserControl x:Class="ChipLauncher.Views.NewsPage"
-             xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
-             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml">
+<UserControl xmlns="https://github.com/avaloniaui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             x:Class="ChipLauncher.Views.NewsPage">
     <Grid Margin="15">
         <!-- ── 内容面板（遮罩显示时隐藏） ─────────────────────── -->
-        <Grid x:Name="ContentPanel">
+        <Grid Name="ContentPanel" IsVisible="True">
             <Grid.ColumnDefinitions>
                 <ColumnDefinition Width="300"/>
                 <ColumnDefinition Width="*"/>
@@ -13,7 +13,7 @@
             <Border BorderBrush="{StaticResource BorderBrush}"
                     BorderThickness="0,0,1,0"
                     Margin="0,0,10,0">
-                <ListBox x:Name="NewsListBox"
+                <ListBox Name="NewsListBox"
                          Background="Transparent"
                          BorderThickness="0"
                          ScrollViewer.HorizontalScrollBarVisibility="Disabled">
@@ -55,7 +55,7 @@
                         <RowDefinition Height="Auto"/>
                     </Grid.RowDefinitions>
 
-                    <TextBlock x:Name="TitleText"
+                    <TextBlock Name="TitleText"
                                FontSize="18"
                                FontWeight="Bold"
                                Foreground="{StaticResource TextPrimaryBrush}"
@@ -63,37 +63,35 @@
                                Margin="0,0,0,8"/>
 
                     <!-- 打开原文按钮 -->
-                    <Button x:Name="OpenUrlButton"
+                    <Button Name="OpenUrlButton"
                             Grid.Row="3"
                             Content="🔗 在浏览器中打开原文"
                             Padding="15,8"
                             FontSize="13"
                             HorizontalAlignment="Left"
-                            Visibility="Collapsed"
-                            Click="OnOpenUrlClick"/>
+                            IsVisible="False"/>
 
-                    <TextBlock x:Name="DateText"
+                    <TextBlock Name="DateText"
                                Grid.Row="1"
                                FontSize="12"
                                Foreground="{StaticResource TextSecondaryBrush}"
                                Margin="0,0,0,15"/>
 
-                    <TextBlock x:Name="ContentText"
+                    <TextBlock Name="ContentText"
                                Grid.Row="2"
                                FontSize="14"
                                Foreground="{StaticResource TextSecondaryBrush}"
                                TextWrapping="Wrap"
-                               LineHeight="22"
                                Margin="0,0,0,15"/>
                 </Grid>
             </ScrollViewer>
         </Grid>
 
         <!-- ── 加载中遮罩（显示时自动隐藏内容面板） ──────────── -->
-        <Border x:Name="LoadingOverlay"
+        <Border Name="LoadingOverlay"
                 Background="#000000"
-                Visibility="Collapsed"
-                Panel.ZIndex="1">
+                IsVisible="False"
+                ZIndex="1">
             <StackPanel VerticalAlignment="Center"
                         HorizontalAlignment="Center">
                 <ProgressBar IsIndeterminate="True"
@@ -110,10 +108,10 @@
         </Border>
 
         <!-- ── 加载失败遮罩（显示时自动隐藏内容面板） ────────── -->
-        <Border x:Name="ErrorOverlay"
+        <Border Name="ErrorOverlay"
                 Background="#000000"
-                Visibility="Collapsed"
-                Panel.ZIndex="1">
+                IsVisible="False"
+                ZIndex="1">
             <StackPanel VerticalAlignment="Center"
                         HorizontalAlignment="Center">
                 <TextBlock Text="⚠ 加载失败"
@@ -128,11 +126,11 @@
                            Margin="0,10,0,20"
                            HorizontalAlignment="Center"
                            TextWrapping="Wrap"/>
-                <Button Content="🔄 重新加载"
+                <Button Name="RetryButton"
+                        Content="🔄 重新加载"
                         Padding="25,10"
                         FontSize="15"
-                        HorizontalAlignment="Center"
-                        Click="OnRetryClick"/>
+                        HorizontalAlignment="Center"/>
             </StackPanel>
         </Border>
     </Grid>

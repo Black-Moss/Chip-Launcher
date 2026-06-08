@@ -10,7 +10,7 @@ namespace ChipLauncher.Services;
 /// <summary>
 /// 从 Steam 新闻 RSS 获取游戏资讯（支持内存缓存）
 /// </summary>
-public class NewsService : INewsService
+public partial class NewsService : INewsService
 {
     private readonly HttpClient _httpClient;
 
@@ -147,24 +147,32 @@ public class NewsService : INewsService
             return string.Empty;
 
         // 先换行标签 → 换行符
-        var text = System.Text.RegularExpressions.Regex
-            .Replace(html, @"</?(?:br|p|div|li|h[1-6])(?:\s[^>]*)?>", "\n");
+        var text = MyRegex().Replace(html, "\n");
         // 去掉剩余 HTML 标签
-        text = System.Text.RegularExpressions.Regex
-            .Replace(text, "<[^>]*>", " ");
+        text = MyRegex1().Replace(text, " ");
         // 压缩空白（保留换行）
-        text = System.Text.RegularExpressions.Regex
-            .Replace(text, @"[^\S\n]+", " ");
+        text = MyRegex2().Replace(text, " ");
         // 合并连续空行
-        text = System.Text.RegularExpressions.Regex
-            .Replace(text, @"\n{3,}", "\n\n");
+        text = MyRegex3().Replace(text, "\n\n");
         return text.Trim();
     }
 
     private static DateTime TryParseDate(string? dateStr)
     {
-        if (DateTime.TryParse(dateStr, out var result))
-            return result;
-        return DateTime.UtcNow;
+        return DateTime.TryParse(dateStr, out var result)
+            ? result
+            : DateTime.UtcNow;
     }
+
+    [System.Text.RegularExpressions.GeneratedRegex(@"</?(?:br|p|div|li|h[1-6])(?:\s[^>]*)?>")]
+    private static partial System.Text.RegularExpressions.Regex MyRegex();
+
+    [System.Text.RegularExpressions.GeneratedRegex("<[^>]*>")]
+    private static partial System.Text.RegularExpressions.Regex MyRegex1();
+
+    [System.Text.RegularExpressions.GeneratedRegex(@"[^\S\n]+")]
+    private static partial System.Text.RegularExpressions.Regex MyRegex2();
+
+    [System.Text.RegularExpressions.GeneratedRegex(@"\n{3,}")]
+    private static partial System.Text.RegularExpressions.Regex MyRegex3();
 }
