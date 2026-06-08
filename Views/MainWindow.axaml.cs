@@ -61,6 +61,9 @@ public partial class MainWindow : SukiWindow
                 case NotificationType.Warning:
                     toast = toast.WithTitle("警告");
                     break;
+                case NotificationType.Info:
+                case NotificationType.Success:
+                    break;
                 default:
                     toast = toast.WithTitle("提示");
                     break;
@@ -115,9 +118,9 @@ public partial class MainWindow : SukiWindow
         var target = page switch
         {
             "Mods" => SideMenuMods,
-            "About" => SideMenuAbout,
+            "News" => SideMenuNews,
             "Settings" => SideMenuSettings,
-            _ => SideMenuNews
+            _ => SideMenuAbout
         };
         target.IsSelected = true;
     }

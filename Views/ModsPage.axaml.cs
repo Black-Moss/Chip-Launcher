@@ -374,7 +374,7 @@ public partial class ModsPage : UserControl
     }
 
     /// <summary>切换模组启用/禁用</summary>
-    private async void OnToggleClick(object? sender, RoutedEventArgs e)
+    private void OnToggleClick(object? sender, RoutedEventArgs e)
     {
         if (sender is not Button { Tag: ModInfo mod }) return;
 
@@ -785,7 +785,7 @@ public partial class ModsPage : UserControl
         }
     }
 
-    private async void OnSaveConfigClick(object? sender, RoutedEventArgs e)
+    private void OnSaveConfigClick(object? sender, RoutedEventArgs e)
     {
         if (_currentConfig == null) return;
 
@@ -820,7 +820,7 @@ public partial class ModsPage : UserControl
     }
 
     /// <summary>用默认程序打开当前选中模组的配置文件</summary>
-    private async void OnOpenConfigClick(object? sender, RoutedEventArgs e)
+    private void OnOpenConfigClick(object? sender, RoutedEventArgs e)
     {
         if (_selectedMod == null) return;
 
@@ -873,7 +873,7 @@ public partial class ModsPage : UserControl
 
     // ── 批量操作 ────────────────────────────────────────────────
 
-    private async void OnBatchEnableClick(object? sender, RoutedEventArgs e)
+    private void OnBatchEnableClick(object? sender, RoutedEventArgs e)
     {
         var selected = _batchSelectedMods.ToList();
         var toggled = 0;
@@ -903,7 +903,7 @@ public partial class ModsPage : UserControl
         AppNotification.Show($"已启用 {toggled} 个模组", NotificationType.Success);
     }
 
-    private async void OnBatchDisableClick(object? sender, RoutedEventArgs e)
+    private void OnBatchDisableClick(object? sender, RoutedEventArgs e)
     {
         var selected = _batchSelectedMods.ToList();
         var toggled = 0;

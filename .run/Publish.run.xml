@@ -1,0 +1,10 @@
+<component name="ProjectRunConfigurationManager">
+  <configuration default="false" name="Publish" type="DotNetFolderPublish" factoryName="Publish to folder">
+    <riderPublish include_all_content_for_self_extract="true" include_native_libs_for_self_extract="true" produce_single_file="true" self_contained="true" target_folder="$PROJECT_DIR$/publish" target_framework="net8.0" uuid_high="4568063479043423850" uuid_low="8954647384006728116">
+      <runtimes>
+        <item value="win-x64" />
+      </runtimes>
+    </riderPublish>
+    <method v="2" />
+  </configuration>
+</component>
