@@ -20,7 +20,7 @@ public partial class NewsPage : UserControl
 
     private async Task LoadNewsAsync()
     {
-        var items = await _newsService.GetNewsAsync("730");
+        var items = await _newsService.GetNewsAsync("4576490");
         NewsListBox.ItemsSource = items;
 
         if (items.Count > 0)

@@ -1,6 +1,6 @@
 using System.Diagnostics;
 using System.IO;
-using System.Runtime.InteropServices;
+using System.Text;
 
 namespace ChipLauncher.Services;
 
@@ -15,17 +15,14 @@ public enum LogLevel
 }
 
 /// <summary>
-/// 日志服务 - 同时输出到文件和控制台
+/// 日志服务 - 输出到文件 + IDE 控制台（UTF-8 直写，无乱码）
 /// </summary>
 public static class Logger
 {
     private static readonly string LogDir;
     private static readonly string LogFile;
     private static readonly object Lock = new();
-    private static bool _consoleAttached;
-
-    [DllImport("kernel32.dll")]
-    private static extern bool AllocConsole();
+    private static readonly Stream? StdoutStream;
 
     static Logger()
     {
@@ -36,7 +33,17 @@ public static class Logger
         if (!Directory.Exists(LogDir))
             Directory.CreateDirectory(LogDir);
 
-        LogFile = Path.Combine(LogDir, $"log-{DateTime.Now:yyyy-MM-dd}.txt");
+        LogFile = Path.Combine(LogDir, $"{DateTime.Now:yy-MM-dd.HH:mm:ss}.txt");
+
+        // 打开 stdout 原始字节流，直接写入 UTF-8 绕过编码问题
+        try
+        {
+            StdoutStream = Console.OpenStandardOutput();
+        }
+        catch
+        {
+            StdoutStream = null;
+        }
     }
 
     /// <summary>写入信息日志</summary>
@@ -67,19 +74,34 @@ public static class Logger
     {
         var line = $"[{DateTime.Now:yyyy-MM-dd HH:mm:ss}] [{level.ToString().ToUpper()}] {message}";
 
-        // 1. 输出到调试窗口（VS 输出窗口可见）
+        // 1. 调试输出（VS / Rider 输出窗口）
         Debug.WriteLine(line);
+
+        // 2. IDE 控制台（直接写入 UTF-8 字节流，彻底避免编码问题）
+        if (StdoutStream != null)
+        {
+            try
+            {
+                var bytes = Encoding.UTF8.GetBytes(line + Environment.NewLine);
+                StdoutStream.Write(bytes, 0, bytes.Length);
+                StdoutStream.Flush();
+            }
+            catch
+            {
+                // 忽略
+            }
+        }
 
         // 3. 写入日志文件
         lock (Lock)
         {
             try
             {
-                File.AppendAllText(LogFile, line + Environment.NewLine);
+                File.AppendAllText(LogFile, line + Environment.NewLine, Encoding.UTF8);
             }
             catch
             {
-                // 日志写入失败不抛异常
+                // 忽略
             }
         }
     }

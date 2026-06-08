@@ -6,41 +6,21 @@
             <RowDefinition Height="Auto"/>
             <RowDefinition Height="Auto"/>
             <RowDefinition Height="Auto"/>
-            <RowDefinition Height="Auto"/>
             <RowDefinition Height="*"/>
         </Grid.RowDefinitions>
 
         <TextBlock Text="设置"
-                   FontSize="20"
-                   Foreground="White"
-                   Margin="0,0,0,20"/>
-
-        <!-- Steam AppId -->
-        <Grid Grid.Row="1" Margin="0,0,0,10">
-            <Grid.ColumnDefinitions>
-                <ColumnDefinition Width="120"/>
-                <ColumnDefinition Width="200"/>
-            </Grid.ColumnDefinitions>
-            <TextBlock Text="Steam AppId："
-                       Foreground="#CCC"
-                       FontSize="14"
-                       VerticalAlignment="Center"/>
-            <TextBox x:Name="AppIdBox"
-                     Grid.Column="1"
-                     Text="730"
-                     FontSize="14"
-                     Padding="5"/>
-        </Grid>
+                   Style="{StaticResource PageTitleStyle}"/>
 
         <!-- 游戏路径 -->
-        <Grid Grid.Row="2" Margin="0,0,0,10">
+        <Grid Grid.Row="1" Margin="0,0,0,15">
             <Grid.ColumnDefinitions>
-                <ColumnDefinition Width="120"/>
+                <ColumnDefinition Width="100"/>
                 <ColumnDefinition Width="*"/>
                 <ColumnDefinition Width="Auto"/>
             </Grid.ColumnDefinitions>
             <TextBlock Text="游戏路径："
-                       Foreground="#CCC"
+                       Foreground="{StaticResource TextSecondaryBrush}"
                        FontSize="14"
                        VerticalAlignment="Center"/>
             <TextBox x:Name="GamePathBox"
@@ -55,7 +35,7 @@
         </Grid>
 
         <!-- 保存按钮 -->
-        <Button Grid.Row="3"
+        <Button Grid.Row="2"
                 Content="保存设置"
                 Padding="15,8"
                 Width="120"

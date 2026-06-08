@@ -7,7 +7,7 @@ namespace ChipLauncher;
 /// <summary>
 /// 主窗口 - 游戏启动器
 /// </summary>
-public partial class MainWindow : Window
+public partial class MainWindow
 {
     private readonly IGameService _gameService;
     private readonly AppConfig _config;
@@ -29,7 +29,7 @@ public partial class MainWindow : Window
         BtnNews.Click += (_, _) =>
         {
             Logger.Info("导航到: 游戏资讯");
-            ContentFrame.Navigate(new Views.NewsPage());
+            ContentFrame.Navigate(new NewsPage());
         };
         BtnSettings.Click += (_, _) =>
         {
@@ -38,13 +38,11 @@ public partial class MainWindow : Window
         };
 
         // 默认显示资讯页
-        ContentFrame.Navigate(new Views.NewsPage());
+        ContentFrame.Navigate(new NewsPage());
     }
 
     private void LaunchGame()
     {
-        var appId = _config.SteamAppId;
-
         if (!string.IsNullOrEmpty(_config.GamePath))
         {
             Logger.Info($"启动游戏（本地路径）: {_config.GamePath}");
@@ -52,8 +50,8 @@ public partial class MainWindow : Window
         }
         else
         {
-            Logger.Info($"启动游戏（Steam）: AppId={appId}");
-            _gameService.LaunchViaSteam(appId);
+            Logger.Info("启动游戏（Steam）");
+            _gameService.LaunchViaSteam();
         }
 
         // 可选：启动后关闭启动器

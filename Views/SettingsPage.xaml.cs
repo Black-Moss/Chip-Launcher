@@ -21,7 +21,6 @@ public partial class SettingsPage : UserControl
 
     private void LoadSettings()
     {
-        AppIdBox.Text = _config.SteamAppId;
         GamePathBox.Text = _config.GamePath ?? string.Empty;
     }
 
@@ -39,7 +38,6 @@ public partial class SettingsPage : UserControl
 
     private void OnSaveClick(object sender, RoutedEventArgs e)
     {
-        _config.SteamAppId = AppIdBox.Text;
         _config.GamePath = GamePathBox.Text;
         _config.Save();
 

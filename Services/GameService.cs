@@ -7,10 +7,10 @@ namespace ChipLauncher.Services;
 /// </summary>
 public class GameService : IGameService
 {
-    public void LaunchViaSteam(string appId)
+    public void LaunchViaSteam()
     {
-        var uri = $"steam://rungameid/{appId}";
-        Logger.Info($"通过 Steam 启动游戏: AppId={appId}, URI={uri}");
+        const string uri = $"steam://rungameid/4576510";
+        Logger.Info($"通过 Steam 启动游戏: URI={uri}");
 
         Process.Start(new ProcessStartInfo
         {

@@ -6,10 +6,10 @@ namespace ChipLauncher.Models;
 public class GameInfo
 {
     /// <summary>Steam AppId</summary>
-    public string AppId { get; set; } = "730";
+    public string AppId { get; set; } = "4576490";
 
     /// <summary>游戏名称</summary>
-    public string Name { get; set; } = "Counter-Strike 2";
+    public string Name { get; set; } = "Sekiro: Shadows Die Twice";
 
     /// <summary>本地可执行文件路径（备用启动方式）</summary>
     public string? ExecutablePath { get; set; }

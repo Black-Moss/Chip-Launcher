@@ -10,11 +10,9 @@ public class AppConfig
 {
     private static readonly string ConfigPath =
         Path.Combine(
-            Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData),
-            "ChipLauncher",
+            AppDomain.CurrentDomain.BaseDirectory,
             "config.json");
 
-    public string SteamAppId { get; set; } = "730";
     public string? GamePath { get; set; }
 
     /// <summary>加载配置，不存在则返回默认值</summary>
@@ -28,10 +26,8 @@ public class AppConfig
                 var json = File.ReadAllText(ConfigPath);
                 return JsonSerializer.Deserialize<AppConfig>(json) ?? new AppConfig();
             }
-            else
-            {
-                Logger.Info("配置文件不存在，使用默认配置");
-            }
+
+            Logger.Info("配置文件不存在，使用默认配置");
         }
         catch (Exception ex)
         {
@@ -52,7 +48,7 @@ public class AppConfig
 
             var json = JsonSerializer.Serialize(this, new JsonSerializerOptions { WriteIndented = true });
             File.WriteAllText(ConfigPath, json);
-            Logger.Info($"配置已保存: SteamAppId={SteamAppId}, GamePath={GamePath ?? "(未设置)"}");
+            Logger.Info($"配置已保存: GamePath={GamePath ?? "(未设置)"}");
         }
         catch (Exception ex)
         {

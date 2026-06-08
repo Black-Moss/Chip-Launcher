@@ -8,12 +8,12 @@
 
     <Grid>
         <Grid.RowDefinitions>
-            <RowDefinition Height="70"/>
-            <RowDefinition Height="*"/>
+            <RowDefinition Height="70" />
+            <RowDefinition Height="*" />
         </Grid.RowDefinitions>
         <Grid.ColumnDefinitions>
-            <ColumnDefinition Width="200"/>
-            <ColumnDefinition Width="*"/>
+            <ColumnDefinition Width="200" />
+            <ColumnDefinition Width="*" />
         </Grid.ColumnDefinitions>
 
         <!-- 顶部标题栏 -->
@@ -24,28 +24,28 @@
                        FontWeight="Bold"
                        Foreground="{StaticResource TextPrimaryBrush}"
                        VerticalAlignment="Center"
-                       Margin="20,0,0,0"/>
+                       Margin="20,0,0,0" />
         </Border>
 
         <!-- 左侧导航栏 -->
         <Border Grid.Row="1" Grid.Column="0"
                 BorderBrush="{StaticResource BorderBrush}"
                 BorderThickness="0,0,1,0">
-        <StackPanel Background="{StaticResource SidebarBrush}">
-            <Button x:Name="BtnPlay" Content="▶ 启动游戏"
-                    Style="{StaticResource SidebarButtonStyle}"/>
-            <Button x:Name="BtnMods" Content="📦 模组管理"
-                    Style="{StaticResource SidebarButtonStyle}"/>
-            <Button x:Name="BtnNews" Content="📰 游戏资讯"
-                    Style="{StaticResource SidebarButtonStyle}"/>
-            <Button x:Name="BtnSettings" Content="⚙ 设置"
-                    Style="{StaticResource SidebarButtonStyle}"/>
-        </StackPanel>
+            <StackPanel Background="{StaticResource SidebarBrush}">
+                <Button x:Name="BtnPlay" Content="▶ 启动游戏"
+                        Style="{StaticResource SidebarButtonStyle}" />
+                <Button x:Name="BtnMods" Content="📦 模组管理"
+                        Style="{StaticResource SidebarButtonStyle}" />
+                <Button x:Name="BtnNews" Content="📰 游戏资讯"
+                        Style="{StaticResource SidebarButtonStyle}" />
+                <Button x:Name="BtnSettings" Content="⚙ 设置"
+                        Style="{StaticResource SidebarButtonStyle}" />
+            </StackPanel>
         </Border>
 
         <!-- 右侧内容区 -->
         <Frame x:Name="ContentFrame"
                Grid.Row="1" Grid.Column="1"
-               NavigationUIVisibility="Hidden"/>
+               NavigationUIVisibility="Hidden" />
     </Grid>
 </Window>
