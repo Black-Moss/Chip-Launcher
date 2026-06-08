@@ -7,20 +7,16 @@
             <RowDefinition Height="Auto"/>
             <RowDefinition Height="Auto"/>
             <RowDefinition Height="Auto"/>
+            <RowDefinition Height="Auto"/>
+            <RowDefinition Height="Auto"/>
             <RowDefinition Height="*"/>
-            <RowDefinition />
         </Grid.RowDefinitions>
 
         <TextBlock Text="设置"
                    Classes="PageTitle"/>
 
         <!-- 游戏路径 -->
-        <Grid Grid.Row="1" Margin="0,0,0,12">
-            <Grid.ColumnDefinitions>
-                <ColumnDefinition Width="100"/>
-                <ColumnDefinition Width="*"/>
-                <ColumnDefinition Width="Auto"/>
-            </Grid.ColumnDefinitions>
+        <Grid Grid.Row="1" Margin="0,0,0,12" ColumnDefinitions="100,*,Auto">
             <TextBlock Text="游戏路径："
                        Foreground="{StaticResource TextSecondaryBrush}"
                        FontSize="14"
@@ -37,12 +33,7 @@
         </Grid>
 
         <!-- 资讯重试次数 -->
-        <Grid Grid.Row="2" Margin="0,0,0,12">
-            <Grid.ColumnDefinitions>
-                <ColumnDefinition Width="100"/>
-                <ColumnDefinition Width="80"/>
-                <ColumnDefinition Width="*"/>
-            </Grid.ColumnDefinitions>
+        <Grid Grid.Row="2" Margin="0,0,0,12" ColumnDefinitions="100,80,*">
             <TextBlock Text="重试次数："
                        Foreground="{StaticResource TextSecondaryBrush}"
                        FontSize="14"
@@ -50,9 +41,9 @@
             <TextBox Grid.Column="1"
                      FontSize="14"
                      Padding="5"
-                     Text="{Binding MaxRetries, Source={x:Static services:AppConfig.Instance}, Mode=TwoWay}"/>
+                     Text="{Binding MaxRetriesText, Source={x:Static services:AppConfig.Instance}, Mode=TwoWay}"/>
             <TextBlock Grid.Column="2"
-                       Text="(资讯加载失败时的重试次数)"
+                       Text="(资讯加载失败时的重试次数，范围 1~20)"
                        Foreground="{StaticResource TextSecondaryBrush}"
                        FontSize="12"
                        Opacity="0.5"
@@ -61,12 +52,7 @@
         </Grid>
 
         <!-- 文本轮播间隔 -->
-        <Grid Grid.Row="3" Margin="0,0,0,12">
-            <Grid.ColumnDefinitions>
-                <ColumnDefinition Width="100"/>
-                <ColumnDefinition Width="80"/>
-                <ColumnDefinition Width="*"/>
-            </Grid.ColumnDefinitions>
+        <Grid Grid.Row="3" Margin="0,0,0,12" ColumnDefinitions="100,80,*">
             <TextBlock Text="轮播间隔："
                        Foreground="{StaticResource TextSecondaryBrush}"
                        FontSize="14"
@@ -74,9 +60,9 @@
             <TextBox Grid.Column="1"
                      FontSize="14"
                      Padding="5"
-                     Text="{Binding TextRotationInterval, Source={x:Static services:AppConfig.Instance}, Mode=TwoWay}"/>
+                     Text="{Binding TextRotationIntervalText, Source={x:Static services:AppConfig.Instance}, Mode=TwoWay}"/>
             <TextBlock Grid.Column="2"
-                       Text="(标题游戏文本切换间隔，单位：秒)"
+                       Text="(标题游戏文本切换间隔，范围 1~60 秒)"
                        Foreground="{StaticResource TextSecondaryBrush}"
                        FontSize="12"
                        Opacity="0.5"
@@ -84,8 +70,23 @@
                        Margin="8,0,0,0"/>
         </Grid>
 
+        <!-- 清除缓存 -->
+        <StackPanel Grid.Row="4" Orientation="Horizontal" Spacing="15" Margin="0,10,0,0">
+            <Button Name="BtnClearCache"
+                    Content="🗑 清除资讯缓存"
+                    Padding="15,8"
+                    FontSize="13"
+                    Cursor="Hand"
+                    Click="OnClearCacheClick"/>
+            <TextBlock Text="删除本地缓存的 Steam 资讯文件，下次打开资讯页时将重新拉取"
+                       Foreground="{StaticResource TextSecondaryBrush}"
+                       FontSize="12"
+                       Opacity="0.6"
+                       VerticalAlignment="Center"/>
+        </StackPanel>
+
         <!-- 提示 -->
-        <TextBlock Grid.Row="4"
+        <TextBlock Grid.Row="5"
                    Text="设置修改后自动保存"
                    Foreground="{StaticResource TextSecondaryBrush}"
                    FontSize="13"

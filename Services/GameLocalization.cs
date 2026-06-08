@@ -188,9 +188,12 @@ public static class GameLocalization
     {
         var root = doc.RootElement;
 
-        result.AddRange(DisplayKeys
-            .Select(key => FindText(root, key))
-            .OfType<string>());
+        foreach (var key in DisplayKeys)
+        {
+            var text = FindText(root, key);
+            if (text != null)
+                result.Add(text);
+        }
 
         return result;
     }

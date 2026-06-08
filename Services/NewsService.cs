@@ -2,27 +2,38 @@ using System.Collections.Concurrent;
 using System.Net;
 using System.Net.Http;
 using System.Security.Authentication;
+using System.Text.Json;
 using System.Xml.Linq;
 using ChipLauncher.Models;
 
 namespace ChipLauncher.Services;
 
 /// <summary>
-/// 从 Steam 新闻 RSS 获取游戏资讯（支持内存缓存）
+/// 从 Steam 新闻 RSS 获取游戏资讯（内存 + 本地文件持久缓存）
+/// 文件缓存除非手动清除，否则永久保留。
 /// </summary>
 public partial class NewsService : INewsService
 {
     private readonly HttpClient _httpClient;
 
-    // ── 内存缓存 ──────────────────────────────────────────────
-    private static readonly ConcurrentDictionary<string, CacheEntry> Cache = new();
-    private static readonly TimeSpan CacheDuration = TimeSpan.FromMinutes(5);
+    // ── 内存缓存（运行时快速读取） ──────────────────────────
+    private static readonly ConcurrentDictionary<string, CacheEntry> MemCache = new();
+    private static readonly TimeSpan MemCacheDuration = TimeSpan.FromDays(30);
+
+    // ── 本地文件缓存路径 ────────────────────────────────────
+    private static readonly string CacheDir = Path.Combine(
+        Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData),
+        "ChipLauncher");
+    private static readonly string CacheFilePath = Path.Combine(CacheDir, "news_cache.json");
+
+    // 用于文件读写的锁（避免并发冲突）
+    private static readonly object FileLock = new();
 
     private class CacheEntry
     {
         public List<NewsItem> Items { get; init; } = [];
         public DateTime CachedAt { get; init; } = DateTime.UtcNow;
-        public bool IsValid => DateTime.UtcNow - CachedAt < CacheDuration;
+        public bool IsValid => DateTime.UtcNow - CachedAt < MemCacheDuration;
     }
 
     public NewsService()
@@ -67,24 +78,68 @@ public partial class NewsService : INewsService
         _httpClient.DefaultRequestHeaders.Add("Cache-Control", "no-cache");
     }
 
-    /// <summary>检查缓存中是否有有效的资讯数据（不发起 HTTP 请求）</summary>
+    // ════════════════════════════════════════════════════════
+    //  缓存读取（内存 → 本地文件回退）
+    // ════════════════════════════════════════════════════════
+
+    /// <summary>
+    /// 尝试获取缓存：先查内存缓存，若无效则尝试从本地文件加载。
+    /// 文件缓存无过期时间（除非手动清除），加载后同时填充内存缓存。
+    /// </summary>
     public static List<NewsItem>? TryGetCached(string appId)
     {
-        if (Cache.TryGetValue(appId, out var cached) && cached.IsValid)
+        // 1. 内存缓存命中且有效
+        if (MemCache.TryGetValue(appId, out var cached) && cached.IsValid)
             return cached.Items;
+
+        // 2. 尝试从本地文件加载
+        var fileItems = LoadFromFile(appId);
+        if (fileItems != null)
+        {
+            // 填充到内存缓存（标记为当前时间，使其有效）
+            MemCache[appId] = new CacheEntry { Items = fileItems };
+            Logger.Info($"从本地文件加载资讯缓存: AppId={appId} ({fileItems.Count} 条)");
+            return fileItems;
+        }
+
         return null;
     }
 
+    /// <summary>从本地 JSON 文件中读取指定 appId 的缓存数据</summary>
+    private static List<NewsItem>? LoadFromFile(string appId)
+    {
+        try
+        {
+            if (!File.Exists(CacheFilePath))
+                return null;
+
+            lock (FileLock)
+            {
+                var json = File.ReadAllText(CacheFilePath);
+                var data = JsonSerializer.Deserialize<Dictionary<string, List<NewsItem>>>(json);
+                if (data != null && data.TryGetValue(appId, out var items) && items.Count > 0)
+                    return items;
+            }
+        }
+        catch (Exception ex)
+        {
+            Logger.Warn($"读取本地缓存文件失败: {ex.Message}");
+        }
+        return null;
+    }
+
+    // ════════════════════════════════════════════════════════
+    //  网络获取
+    // ════════════════════════════════════════════════════════
+
     public async Task<List<NewsItem>?> GetNewsAsync(string appId)
     {
-        // 1. 检查缓存是否有效
-        if (Cache.TryGetValue(appId, out var cached) && cached.IsValid)
-        {
-            Logger.Info($"使用缓存资讯: AppId={appId} ({cached.Items.Count} 条)");
-            return cached.Items;
-        }
+        // 1. 检查缓存（内存 + 文件回退）
+        var cached = TryGetCached(appId);
+        if (cached != null)
+            return cached;
 
-        // 2. 缓存失效 → 发起一次 HTTP 请求（失败不自动重试）
+        // 2. 无任何缓存 → 发起 HTTP 请求
         var url = $"https://store.steampowered.com/feeds/news/app/{appId}/";
 
         try
@@ -93,9 +148,13 @@ public partial class NewsService : INewsService
             var xml = await _httpClient.GetStringAsync(url);
             var items = ParseSteamRss(xml);
 
-            // 更新缓存
-            Cache[appId] = new CacheEntry { Items = items };
-            Logger.Info($"获取资讯成功: {items.Count} 条 (已缓存 {CacheDuration.TotalMinutes} 分钟)");
+            // 3. 保存到内存缓存
+            MemCache[appId] = new CacheEntry { Items = items };
+
+            // 4. 保存到本地文件（永久保留）
+            SaveToFile(appId, items);
+
+            Logger.Info($"获取资讯成功: {items.Count} 条 (已缓存到本地)");
             return items;
         }
         catch (HttpRequestException ex)
@@ -115,14 +174,73 @@ public partial class NewsService : INewsService
         }
     }
 
-    /// <summary>
-    /// 清除所有缓存，下次调用 GetNewsAsync 会重新从 Steam 拉取
-    /// </summary>
+    // ════════════════════════════════════════════════════════
+    //  本地文件写入
+    // ════════════════════════════════════════════════════════
+
+    /// <summary>将资讯数据写入本地 JSON 文件（永久保留）</summary>
+    private static void SaveToFile(string appId, List<NewsItem> items)
+    {
+        try
+        {
+            Directory.CreateDirectory(CacheDir);
+
+            lock (FileLock)
+            {
+                Dictionary<string, List<NewsItem>> data;
+
+                // 读取现有文件内容（增量合并）
+                if (File.Exists(CacheFilePath))
+                {
+                    var existingJson = File.ReadAllText(CacheFilePath);
+                    data = JsonSerializer.Deserialize<Dictionary<string, List<NewsItem>>>(existingJson)
+                           ?? new Dictionary<string, List<NewsItem>>();
+                }
+                else
+                {
+                    data = new Dictionary<string, List<NewsItem>>();
+                }
+
+                data[appId] = items;
+
+                var options = new JsonSerializerOptions { WriteIndented = true };
+                File.WriteAllText(CacheFilePath, JsonSerializer.Serialize(data, options));
+            }
+        }
+        catch (Exception ex)
+        {
+            Logger.Warn($"保存本地缓存文件失败: {ex.Message}");
+        }
+    }
+
+    // ════════════════════════════════════════════════════════
+    //  清除缓存（内存 + 本地文件）
+    // ════════════════════════════════════════════════════════
+
+    /// <summary>清除所有缓存（内存 + 本地文件），下次获取会重新从 Steam 拉取</summary>
     public static void ClearCache()
     {
-        Cache.Clear();
-        Logger.Info("资讯缓存已清除");
+        MemCache.Clear();
+
+        try
+        {
+            if (File.Exists(CacheFilePath))
+            {
+                File.Delete(CacheFilePath);
+                Logger.Info("本地缓存文件已删除");
+            }
+        }
+        catch (Exception ex)
+        {
+            Logger.Warn($"删除本地缓存文件失败: {ex.Message}");
+        }
+
+        Logger.Info("资讯缓存已清除（内存 + 本地文件）");
     }
+
+    // ════════════════════════════════════════════════════════
+    //  RSS 解析
+    // ════════════════════════════════════════════════════════
 
     private static List<NewsItem> ParseSteamRss(string xml)
     {
@@ -131,10 +249,10 @@ public partial class NewsService : INewsService
         return doc.Descendants("item")
             .Select(item => new NewsItem
             {
-                Title = item.Element("title")?.Value?.Trim() ?? "无标题",
+                Title = item.Element("title")?.Value.Trim() ?? "无标题",
                 Content = StripHtmlTags(
-                    item.Element("description")?.Value?.Trim() ?? "暂无内容"),
-                Url = item.Element("link")?.Value?.Trim() ?? string.Empty,
+                    item.Element("description")?.Value.Trim() ?? "暂无内容"),
+                Url = item.Element("link")?.Value.Trim() ?? string.Empty,
                 PublishDate = TryParseDate(
                     item.Element("pubDate")?.Value),
             })

@@ -1,23 +1,17 @@
 <Styles xmlns="https://github.com/avaloniaui"
         xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml">
 
-    <!-- 全局资源（颜色、画刷） -->
+    <!-- 全局颜色资源 -->
     <Styles.Resources>
         <Color x:Key="PrimaryColor">#000000</Color>
-        <Color x:Key="SecondaryColor">#000000</Color>
-        <Color x:Key="AccentColor">#000000</Color>
-        <Color x:Key="HoverColor">#000000</Color>
         <Color x:Key="TextPrimaryColor">#FFFFFF</Color>
         <Color x:Key="TextSecondaryColor">#FFFFFF</Color>
         <Color x:Key="BorderColor">#FFFFFF</Color>
 
-        <SolidColorBrush x:Key="BackgroundBrush" Color="{StaticResource PrimaryColor}" />
-        <SolidColorBrush x:Key="SidebarBrush" Color="{StaticResource SecondaryColor}" />
-        <SolidColorBrush x:Key="AccentBrush" Color="{StaticResource AccentColor}" />
-        <SolidColorBrush x:Key="HoverBrush" Color="{StaticResource HoverColor}" />
-        <SolidColorBrush x:Key="BorderBrush" Color="{StaticResource BorderColor}" />
+        <SolidColorBrush x:Key="PrimaryBrush" Color="{StaticResource PrimaryColor}" />
         <SolidColorBrush x:Key="TextPrimaryBrush" Color="{StaticResource TextPrimaryColor}" />
         <SolidColorBrush x:Key="TextSecondaryBrush" Color="{StaticResource TextSecondaryColor}" />
+        <SolidColorBrush x:Key="BorderBrush" Color="{StaticResource BorderColor}" />
     </Styles.Resources>
 
     <!-- 页面标题 -->
@@ -26,28 +20,6 @@
         <Setter Property="FontWeight" Value="Bold" />
         <Setter Property="Foreground" Value="{StaticResource TextPrimaryBrush}" />
         <Setter Property="Margin" Value="0,0,0,20" />
-    </Style>
-
-    <!-- 侧边栏按钮 -->
-    <Style Selector="Button.SidebarButtonStyle">
-        <Setter Property="Background" Value="Transparent" />
-        <Setter Property="Foreground" Value="{StaticResource TextPrimaryBrush}" />
-        <Setter Property="FontSize" Value="15" />
-        <Setter Property="Padding" Value="15,12" />
-        <Setter Property="Margin" Value="0,2" />
-        <Setter Property="Cursor" Value="Hand" />
-        <Setter Property="BorderThickness" Value="0" />
-        <Setter Property="HorizontalContentAlignment" Value="Left" />
-    </Style>
-
-    <!-- 默认按钮 -->
-    <Style Selector="Button">
-        <Setter Property="Background" Value="{StaticResource AccentBrush}" />
-        <Setter Property="Foreground" Value="{StaticResource TextPrimaryBrush}" />
-        <Setter Property="FontSize" Value="14" />
-        <Setter Property="Padding" Value="12,8" />
-        <Setter Property="Cursor" Value="Hand" />
-        <Setter Property="BorderThickness" Value="0" />
     </Style>
 
     <!-- 文本框 -->
@@ -66,15 +38,6 @@
         <Setter Property="Background" Value="Transparent" />
         <Setter Property="Foreground" Value="{StaticResource TextPrimaryBrush}" />
         <Setter Property="BorderThickness" Value="0" />
-    </Style>
-
-    <!-- 窗口控制按钮（最小化/最大化/关闭） -->
-    <Style Selector="Button.WindowButtonStyle">
-        <Setter Property="Background" Value="Transparent" />
-        <Setter Property="Foreground" Value="{StaticResource TextPrimaryBrush}" />
-        <Setter Property="BorderThickness" Value="0" />
-        <Setter Property="Padding" Value="0" />
-        <Setter Property="Cursor" Value="Hand" />
     </Style>
 
 </Styles>

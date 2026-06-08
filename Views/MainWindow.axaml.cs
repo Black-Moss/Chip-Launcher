@@ -1,4 +1,5 @@
 using System;
+using System.Runtime.InteropServices;
 using Avalonia;
 using Avalonia.Controls;
 using Avalonia.Input;
@@ -8,10 +9,12 @@ using ChipLauncher.Services;
 namespace ChipLauncher.Views;
 
 /// <summary>
-/// 主窗口 - 游戏启动器（Avalonia 版本）
+/// 主窗口 - 游戏启动器（纯黑圆角风格）
 /// </summary>
 public partial class MainWindow : Window
 {
+    private const int WindowCornerRadius = 10;
+
     private readonly IGameService _gameService;
     private string[] _gameTexts = [];
     private int _currentTextIndex;
@@ -20,9 +23,16 @@ public partial class MainWindow : Window
     public MainWindow()
     {
         InitializeComponent();
-        Logger.Info("Chip Launcher 启动 (Avalonia)");
+        Logger.Info("Chip Launcher 启动");
 
         _gameService = new GameService();
+
+        // 窗口显示后应用 Win32 圆角区域
+        Opened += (_, _) => ApplyRoundCorners();
+
+        // 窗口尺寸变化 / 状态变化时重新应用圆角区域
+        Resized += OnWindowResized;
+        PropertyChanged += OnWindowPropertyChanged;
 
         // 启动时后台预取资讯 + 加载游戏文本
         _ = PrefetchNewsAsync();
@@ -63,7 +73,64 @@ public partial class MainWindow : Window
         TitleBar.PointerPressed += OnTitleBarPointerPressed;
     }
 
-    /// <summary>标题栏拖拽处理：按下鼠标左键时开始窗口拖拽</summary>
+    // ===== Win32 圆角窗口实现 =====
+
+    [DllImport("user32.dll")]
+    private static extern int SetWindowRgn(IntPtr hWnd, IntPtr hRgn, bool bRedraw);
+
+    [DllImport("gdi32.dll")]
+    private static extern IntPtr CreateRoundRectRgn(int x1, int y1, int x2, int y2, int cx, int cy);
+
+    /// <summary>
+    /// 应用或移除圆角窗口区域。
+    /// 最大化时移除区域（窗口应为矩形全屏），普通/最小化时应用圆角。
+    /// </summary>
+    private void ApplyRoundCorners()
+    {
+        var handle = TryGetPlatformHandle()?.Handle;
+        if (handle == null || handle.Value == IntPtr.Zero)
+            return;
+
+        var hwnd = handle.Value;
+
+        if (WindowState == WindowState.Maximized)
+        {
+            // 最大化时：移除自定义区域，让窗口恢复矩形全屏
+            SetWindowRgn(hwnd, IntPtr.Zero, true);
+            return;
+        }
+
+        var width = (int)ClientSize.Width;
+        var height = (int)ClientSize.Height;
+        if (width <= 0 || height <= 0)
+            return;
+
+        var hRgn = CreateRoundRectRgn(0, 0, width, height, WindowCornerRadius, WindowCornerRadius);
+        if (hRgn != IntPtr.Zero)
+        {
+            // SetWindowRgn 接管了 HRGN 所有权，不需要手动 DeleteObject
+            SetWindowRgn(hwnd, hRgn, true);
+        }
+    }
+
+    /// <summary>窗口大小变化时重新应用圆角区域</summary>
+    private void OnWindowResized(object? sender, EventArgs e)
+    {
+        ApplyRoundCorners();
+    }
+
+    /// <summary>窗口状态变化（最大化/还原）时重新应用圆角区域</summary>
+    private void OnWindowPropertyChanged(object? sender, AvaloniaPropertyChangedEventArgs e)
+    {
+        if (e.Property == WindowStateProperty)
+        {
+            ApplyRoundCorners();
+        }
+    }
+
+    // ===== 标题栏拖拽 =====
+
+    /// <summary>标题栏拖拽处理</summary>
     private void OnTitleBarPointerPressed(object? sender, PointerPressedEventArgs e)
     {
         if (e.GetCurrentPoint(this).Properties.PointerUpdateKind == PointerUpdateKind.LeftButtonPressed)
@@ -72,7 +139,9 @@ public partial class MainWindow : Window
         }
     }
 
-    /// <summary>启动时后台预取资讯，结果缓存到 NewsService 中</summary>
+    // ===== 资讯预取 =====
+
+    /// <summary>启动时后台预取资讯</summary>
     private static async Task PrefetchNewsAsync()
     {
         var newsService = new NewsService();
@@ -83,7 +152,9 @@ public partial class MainWindow : Window
             Logger.Warn("启动预取资讯失败，用户可在资讯页手动重试");
     }
 
-    /// <summary>读取游戏本地化文件，启动定时轮播（默认 3 秒切换一条）</summary>
+    // ===== 游戏文本轮播 =====
+
+    /// <summary>读取游戏本地化文件，启动定时轮播</summary>
     private void LoadGameLocalization()
     {
         try
@@ -98,10 +169,7 @@ public partial class MainWindow : Window
             _gameTexts = [.. texts];
             _currentTextIndex = 0;
 
-            // 显示第一条
             ShowCurrentText();
-
-            // 启动轮播定时器
             StartTextRotation();
 
             Logger.Info($"已加载 {_gameTexts.Length} 条游戏文本，每 {AppConfig.Instance.TextRotationInterval} 秒轮播");
@@ -112,7 +180,6 @@ public partial class MainWindow : Window
         }
     }
 
-    /// <summary>在标题栏显示当前索引的文本</summary>
     private void ShowCurrentText()
     {
         if (_gameTexts.Length == 0) return;
@@ -121,7 +188,6 @@ public partial class MainWindow : Window
         GameInfoPanel.IsVisible = true;
     }
 
-    /// <summary>启动/重启文本轮播定时器</summary>
     private void StartTextRotation()
     {
         _textTimer?.Stop();
@@ -136,6 +202,8 @@ public partial class MainWindow : Window
         };
         _textTimer.Start();
     }
+
+    // ===== 游戏启动 =====
 
     private void LaunchGame()
     {

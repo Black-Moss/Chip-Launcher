@@ -1,7 +1,7 @@
 using System;
-using System.Linq;
 using Avalonia.Controls;
 using Avalonia.Interactivity;
+using Avalonia.Platform.Storage;
 using ChipLauncher.Services;
 
 namespace ChipLauncher.Views;
@@ -16,31 +16,32 @@ public partial class SettingsPage : UserControl
         InitializeComponent();
     }
 
+    /// <summary>清除本地缓存的 Steam 资讯</summary>
+    private void OnClearCacheClick(object? sender, RoutedEventArgs e)
+    {
+        NewsService.ClearCache();
+        Logger.Info("用户手动清除了资讯缓存");
+    }
+
     private async void OnBrowseClick(object? sender, RoutedEventArgs e)
     {
-        var parentWindow = TopLevel.GetTopLevel(this) as Window;
-        if (parentWindow == null) return;
+        var topLevel = TopLevel.GetTopLevel(this);
+        if (topLevel == null) return;
 
-        var dialog = new OpenFileDialog
+        var files = await topLevel.StorageProvider.OpenFilePickerAsync(new FilePickerOpenOptions
         {
             Title = "选择游戏可执行文件",
             AllowMultiple = false,
-        };
-        dialog.Filters.Add(new FileDialogFilter
-        {
-            Name = "可执行文件 (*.exe)",
-            Extensions = { "exe" },
-        });
-        dialog.Filters.Add(new FileDialogFilter
-        {
-            Name = "所有文件 (*.*)",
-            Extensions = { "*" },
+            FileTypeFilter =
+            [
+                new FilePickerFileType("可执行文件 (*.exe)") { Patterns = ["*.exe"] },
+                new FilePickerFileType("所有文件 (*.*)") { Patterns = ["*"] }
+            ],
         });
 
-        var result = await dialog.ShowAsync(parentWindow);
-        if (result is { Length: > 0 })
+        if (files.Count > 0)
         {
-            AppConfig.Instance.GamePath = result[0];
+            AppConfig.Instance.GamePath = files[0].Path.LocalPath;
         }
     }
 }

@@ -5,7 +5,7 @@
     <Application.Styles>
         <FluentTheme />
 
-        <!-- 合并自定义样式 -->
+        <!-- 自定义样式 -->
         <StyleInclude Source="avares://ChipLauncher/Styles/Styles.axaml" />
     </Application.Styles>
 

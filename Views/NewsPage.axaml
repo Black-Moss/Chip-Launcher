@@ -3,11 +3,7 @@
              x:Class="ChipLauncher.Views.NewsPage">
     <Grid Margin="15">
         <!-- ── 内容面板（遮罩显示时隐藏） ─────────────────────── -->
-        <Grid Name="ContentPanel" IsVisible="True">
-            <Grid.ColumnDefinitions>
-                <ColumnDefinition Width="300"/>
-                <ColumnDefinition Width="*"/>
-            </Grid.ColumnDefinitions>
+        <Grid Name="ContentPanel" IsVisible="True" ColumnDefinitions="300,*">
 
             <!-- 左侧新闻列表 -->
             <Border BorderBrush="{StaticResource BorderBrush}"
@@ -22,11 +18,7 @@
                             <Border Padding="12,10" Margin="0,0,0,4"
                                     BorderBrush="{StaticResource BorderBrush}"
                                     BorderThickness="0,0,0,1">
-                                <Grid>
-                                    <Grid.RowDefinitions>
-                                        <RowDefinition Height="Auto"/>
-                                        <RowDefinition Height="Auto"/>
-                                    </Grid.RowDefinitions>
+                                <Grid RowDefinitions="Auto,Auto">
                                     <TextBlock Text="{Binding Title}"
                                                FontSize="14"
                                                FontWeight="Bold"
@@ -47,13 +39,7 @@
             <!-- 右侧详细内容 -->
             <ScrollViewer Grid.Column="1"
                           VerticalScrollBarVisibility="Auto">
-                <Grid Margin="10,0,0,0">
-                    <Grid.RowDefinitions>
-                        <RowDefinition Height="Auto"/>
-                        <RowDefinition Height="Auto"/>
-                        <RowDefinition Height="*"/>
-                        <RowDefinition Height="Auto"/>
-                    </Grid.RowDefinitions>
+                <Grid Margin="10,0,0,0" RowDefinitions="Auto,Auto,Auto,*">
 
                     <TextBlock Name="TitleText"
                                FontSize="18"
@@ -62,27 +48,27 @@
                                TextWrapping="Wrap"
                                Margin="0,0,0,8"/>
 
-                    <!-- 打开原文按钮 -->
-                    <Button Name="OpenUrlButton"
-                            Grid.Row="3"
-                            Content="🔗 在浏览器中打开原文"
-                            Padding="15,8"
-                            FontSize="13"
-                            HorizontalAlignment="Left"
-                            IsVisible="False"/>
-
                     <TextBlock Name="DateText"
                                Grid.Row="1"
                                FontSize="12"
                                Foreground="{StaticResource TextSecondaryBrush}"
-                               Margin="0,0,0,15"/>
+                               Margin="0,0,0,8"/>
+
+                    <!-- 打开原文按钮（日期下方） -->
+                    <Button Name="OpenUrlButton"
+                            Grid.Row="2"
+                            Content="🔗 在浏览器中打开原文"
+                            Padding="15,8"
+                            FontSize="13"
+                            HorizontalAlignment="Left"
+                            Margin="0,0,0,12"
+                            IsVisible="False"/>
 
                     <TextBlock Name="ContentText"
-                               Grid.Row="2"
+                               Grid.Row="3"
                                FontSize="14"
                                Foreground="{StaticResource TextSecondaryBrush}"
-                               TextWrapping="Wrap"
-                               Margin="0,0,0,15"/>
+                               TextWrapping="Wrap"/>
                 </Grid>
             </ScrollViewer>
         </Grid>

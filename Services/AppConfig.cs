@@ -6,7 +6,7 @@ using System.Text.Json;
 namespace ChipLauncher.Services;
 
 /// <summary>
-/// 应用配置管理（JSON 文件存储）— 单例 + 自动保存
+/// 应用配置管理（JSON 文件存储）— 单例 + 自动保存（防抖 500ms）
 /// </summary>
 public class AppConfig : INotifyPropertyChanged
 {
@@ -34,30 +34,63 @@ public class AppConfig : INotifyPropertyChanged
     }
 
     private int _maxRetries = 5;
-    /// <summary>资讯获取失败时的最大重试次数（默认 5）</summary>
+    /// <summary>资讯获取失败时的最大重试次数（默认 5，JSON 序列化用此属性）</summary>
     public int MaxRetries
     {
         get => _maxRetries;
         set
         {
-            if (_maxRetries == value) return;
-            _maxRetries = Math.Clamp(value, 1, 20);
+            var clamped = Math.Clamp(value, 1, 20);
+            if (_maxRetries == clamped) return;
+            _maxRetries = clamped;
             OnPropertyChanged();
+            OnPropertyChanged(nameof(MaxRetriesText));
             Save();
         }
     }
 
+    /// <summary>
+    /// 给 TextBox 绑定的字符串包装属性（避免 int → string 转换异常）。
+    /// 空值 / 非法输入不更新。
+    /// </summary>
+    [System.Text.Json.Serialization.JsonIgnore]
+    public string MaxRetriesText
+    {
+        get => _maxRetries.ToString();
+        set
+        {
+            if (int.TryParse(value, out var parsed))
+                MaxRetries = parsed;
+        }
+    }
+
     private int _textRotationInterval = 3;
-    /// <summary>标题栏游戏文本轮播间隔（秒，默认 3，范围 1~60）</summary>
+    /// <summary>标题栏游戏文本轮播间隔（秒，默认 3，JSON 序列化用此属性）</summary>
     public int TextRotationInterval
     {
         get => _textRotationInterval;
         set
         {
-            if (_textRotationInterval == value) return;
-            _textRotationInterval = Math.Clamp(value, 1, 60);
+            var clamped = Math.Clamp(value, 1, 60);
+            if (_textRotationInterval == clamped) return;
+            _textRotationInterval = clamped;
             OnPropertyChanged();
+            OnPropertyChanged(nameof(TextRotationIntervalText));
             Save();
+        }
+    }
+
+    /// <summary>
+    /// 给 TextBox 绑定的字符串包装属性（避免 int → string 转换异常）
+    /// </summary>
+    [System.Text.Json.Serialization.JsonIgnore]
+    public string TextRotationIntervalText
+    {
+        get => _textRotationInterval.ToString();
+        set
+        {
+            if (int.TryParse(value, out var parsed))
+                TextRotationInterval = parsed;
         }
     }
 
@@ -87,23 +120,44 @@ public class AppConfig : INotifyPropertyChanged
         return new AppConfig();
     }
 
-    /// <summary>保存到 JSON 文件</summary>
+    // ── 防抖保存 ──────────────────────────────────────────────
+
+    private CancellationTokenSource? _saveCts;
+    private static readonly TimeSpan SaveDebounce = TimeSpan.FromMilliseconds(500);
+
+    /// <summary>
+    /// 防抖保存：500ms 内没有被再次调用才会真正写入文件。
+    /// 连续修改（如打字时）只会触发一次最终写入。
+    /// </summary>
     private void Save()
     {
-        try
-        {
-            var dir = Path.GetDirectoryName(ConfigPath);
-            if (dir != null && !Directory.Exists(dir))
-                Directory.CreateDirectory(dir);
+        _saveCts?.Cancel();
+        _saveCts = new CancellationTokenSource();
+        var token = _saveCts.Token;
 
-            var json = JsonSerializer.Serialize(this, new JsonSerializerOptions { WriteIndented = true });
-            File.WriteAllText(ConfigPath, json);
-            Logger.Info($"配置已保存: GamePath={GamePath ?? "(未设置)"}");
-        }
-        catch (Exception ex)
+        _ = Task.Run(async () =>
         {
-            Logger.Error("保存配置文件失败", ex);
-        }
+            try
+            {
+                await Task.Delay(SaveDebounce, token);
+
+                var dir = Path.GetDirectoryName(ConfigPath);
+                if (dir != null && !Directory.Exists(dir))
+                    Directory.CreateDirectory(dir);
+
+                var json = JsonSerializer.Serialize(this, new JsonSerializerOptions { WriteIndented = true });
+                File.WriteAllText(ConfigPath, json);
+                Logger.Info($"配置已保存");
+            }
+            catch (TaskCanceledException)
+            {
+                // 被后续修改取消，不需要处理
+            }
+            catch (Exception ex)
+            {
+                Logger.Error("保存配置文件失败", ex);
+            }
+        }, token);
     }
 
     // ── INotifyPropertyChanged ────────────────────────────────

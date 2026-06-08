@@ -1,101 +1,135 @@
 <Window xmlns="https://github.com/avaloniaui"
         xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
-        xmlns:local="using:ChipLauncher.Views"
         x:Class="ChipLauncher.Views.MainWindow"
         Title="Chip Launcher"
         Height="550" Width="800"
         WindowStartupLocation="CenterScreen"
         SystemDecorations="None"
-        Background="{StaticResource BackgroundBrush}">
+        Background="#000000">
 
-    <Grid>
-        <Grid.RowDefinitions>
-            <RowDefinition Height="70" />
-            <RowDefinition Height="*" />
-        </Grid.RowDefinitions>
-        <Grid.ColumnDefinitions>
-            <ColumnDefinition Width="200" />
-            <ColumnDefinition Width="*" />
-        </Grid.ColumnDefinitions>
+    <!-- 外层 Border：ClipToBounds 让圆角裁剪内容 -->
+    <Border CornerRadius="10"
+            Background="#000000"
+            ClipToBounds="True">
 
-        <!-- 顶部标题栏（拖拽区域：PointerPressed 中处理 BeginMoveDrag） -->
-        <Border Name="TitleBar"
-                Grid.Row="0" Grid.ColumnSpan="2"
-                Background="{StaticResource SidebarBrush}">
-            <Grid Margin="20,0,10,0" ColumnDefinitions="Auto,*,Auto">
+        <Grid RowDefinitions="90,*" ColumnDefinitions="200,*">
 
-                <TextBlock Text="Chip Launcher"
-                           FontSize="22"
-                           FontWeight="Bold"
-                           Foreground="{StaticResource TextPrimaryBrush}"
-                           VerticalAlignment="Center" />
+            <!-- 顶部标题栏（拖拽区域） -->
+            <Border Name="TitleBar"
+                    Grid.Row="0" Grid.ColumnSpan="2"
+                    Background="#000000">
+                <Grid Margin="20,0,10,0" ColumnDefinitions="Auto,*,Auto">
 
-                <!-- 游戏信息（灰色小字，紧挨标题右侧） -->
-                <ItemsControl Name="GameInfoPanel"
-                              Grid.Column="1"
-                              Margin="12,0,0,0"
-                              VerticalAlignment="Center"
-                              IsVisible="False">
-                    <ItemsControl.ItemsPanel>
-                        <ItemsPanelTemplate>
-                            <StackPanel Orientation="Horizontal" />
-                        </ItemsPanelTemplate>
-                    </ItemsControl.ItemsPanel>
-                    <ItemsControl.ItemTemplate>
-                        <DataTemplate>
-                            <TextBlock Text="{Binding}"
-                                       FontSize="12"
-                                       Foreground="#888888"
-                                       Margin="4,0" />
-                        </DataTemplate>
-                    </ItemsControl.ItemTemplate>
-                </ItemsControl>
+                    <TextBlock Text="Chip Launcher"
+                               FontSize="22"
+                               FontWeight="Bold"
+                               Foreground="White"
+                               VerticalAlignment="Center" />
 
-                <!-- 窗口控制按钮（Avalonia 原生支持，无需 IsHitTestVisibleInChrome hack） -->
-                <StackPanel Grid.Column="2"
-                            Orientation="Horizontal"
-                            VerticalAlignment="Center">
-                    <Button Name="BtnMinimize"
-                            Content="─"
-                            Width="30" Height="24"
-                            FontSize="16"
-                            ToolTip.Tip="最小化"
-                            Classes="WindowButtonStyle" />
-                    <Button Name="BtnMaximize"
-                            Content="▢"
-                            Width="30" Height="24"
-                            FontSize="16"
-                            Margin="4,0"
-                            ToolTip.Tip="最大化"
-                            Classes="WindowButtonStyle" />
-                    <Button Name="BtnClose"
-                            Content="╳"
-                            Width="30" Height="24"
-                            FontSize="16"
-                            ToolTip.Tip="关闭"
-                            Classes="WindowButtonStyle" />
+                    <!-- 游戏信息（灰色小字，紧挨标题右侧） -->
+                    <ItemsControl Name="GameInfoPanel"
+                                  Grid.Column="1"
+                                  Margin="12,0,0,0"
+                                  VerticalAlignment="Center"
+                                  IsVisible="False">
+                        <ItemsControl.ItemsPanel>
+                            <ItemsPanelTemplate>
+                                <StackPanel Orientation="Horizontal" />
+                            </ItemsPanelTemplate>
+                        </ItemsControl.ItemsPanel>
+                        <ItemsControl.ItemTemplate>
+                            <DataTemplate>
+                                <TextBlock Text="{Binding}"
+                                           FontSize="12"
+                                           Foreground="#888888"
+                                           Margin="4,0" />
+                            </DataTemplate>
+                        </ItemsControl.ItemTemplate>
+                    </ItemsControl>
+
+                    <!-- 窗口控制按钮 -->
+                    <StackPanel Grid.Column="2"
+                                Orientation="Horizontal"
+                                VerticalAlignment="Center">
+                        <Button Name="BtnMinimize"
+                                Content="─"
+                                Width="30" Height="30"
+                                FontSize="16"
+                                ToolTip.Tip="最小化"
+                                Background="Transparent"
+                                Foreground="White"
+                                BorderThickness="0"
+                                Cursor="Hand" />
+                        <Button Name="BtnMaximize"
+                                Content="▢"
+                                Width="30" Height="30"
+                                FontSize="16"
+                                Margin="4,0"
+                                ToolTip.Tip="最大化"
+                                Background="Transparent"
+                                Foreground="White"
+                                BorderThickness="0"
+                                Cursor="Hand" />
+                        <Button Name="BtnClose"
+                                Content="╳"
+                                Width="30" Height="30"
+                                FontSize="16"
+                                ToolTip.Tip="关闭"
+                                Background="Transparent"
+                                Foreground="White"
+                                BorderThickness="0"
+                                Cursor="Hand" />
+                    </StackPanel>
+                </Grid>
+            </Border>
+
+            <!-- 左侧导航栏 -->
+            <Border Grid.Row="1" Grid.Column="0"
+                    Background="#000000">
+                <StackPanel>
+                    <Button Name="BtnPlay" Content="⏬ 启动游戏"
+                            Background="Transparent"
+                            Foreground="#CCCCCC"
+                            FontSize="15"
+                            Padding="15,12"
+                            Margin="0,2"
+                            Cursor="Hand"
+                            BorderThickness="0"
+                            HorizontalContentAlignment="Left" />
+                    <Button Name="BtnMods" Content="📦 模组管理"
+                            Background="Transparent"
+                            Foreground="#CCCCCC"
+                            FontSize="15"
+                            Padding="15,12"
+                            Margin="0,2"
+                            Cursor="Hand"
+                            BorderThickness="0"
+                            HorizontalContentAlignment="Left" />
+                    <Button Name="BtnNews" Content="📰 游戏资讯"
+                            Background="Transparent"
+                            Foreground="#CCCCCC"
+                            FontSize="15"
+                            Padding="15,12"
+                            Margin="0,2"
+                            Cursor="Hand"
+                            BorderThickness="0"
+                            HorizontalContentAlignment="Left" />
+                    <Button Name="BtnSettings" Content="⚙ 设置"
+                            Background="Transparent"
+                            Foreground="#CCCCCC"
+                            FontSize="15"
+                            Padding="15,12"
+                            Margin="0,2"
+                            Cursor="Hand"
+                            BorderThickness="0"
+                            HorizontalContentAlignment="Left" />
                 </StackPanel>
-            </Grid>
-        </Border>
+            </Border>
 
-        <!-- 左侧导航栏 -->
-        <Border Grid.Row="1" Grid.Column="0"
-                BorderBrush="{StaticResource BorderBrush}"
-                BorderThickness="0,0,1,0">
-            <StackPanel Background="{StaticResource SidebarBrush}">
-                <Button Name="BtnPlay" Content="⏬ 启动游戏"
-                        Classes="SidebarButtonStyle" />
-                <Button Name="BtnMods" Content="📦 模组管理"
-                        Classes="SidebarButtonStyle" />
-                <Button Name="BtnNews" Content="📰 游戏资讯"
-                        Classes="SidebarButtonStyle" />
-                <Button Name="BtnSettings" Content="⚙ 设置"
-                        Classes="SidebarButtonStyle" />
-            </StackPanel>
-        </Border>
-
-        <!-- 右侧内容区（使用 ContentControl 替代 WPF 的 Frame） -->
-        <ContentControl Name="ContentFrame"
-                        Grid.Row="1" Grid.Column="1" />
-    </Grid>
+            <!-- 右侧内容区 -->
+            <ContentControl Name="ContentFrame"
+                            Grid.Row="1" Grid.Column="1"
+                            Background="#000000" />
+        </Grid>
+    </Border>
 </Window>
