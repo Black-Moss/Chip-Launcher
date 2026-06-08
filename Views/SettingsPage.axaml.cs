@@ -1,5 +1,4 @@
 using System.Diagnostics;
-using Avalonia;
 using Avalonia.Controls;
 using Avalonia.Interactivity;
 using Avalonia.Platform.Storage;
@@ -69,7 +68,7 @@ public partial class SettingsPage : UserControl
         NewsService.ClearCache();
         Logger.Info("用户手动清除了资讯缓存");
     }
-    
+
     private async void OnBrowseClick(object? sender, RoutedEventArgs e)
     {
         var topLevel = TopLevel.GetTopLevel(this);
@@ -101,7 +100,7 @@ public partial class SettingsPage : UserControl
         if (sideMenuSettings is { IsSelected: false })
             sideMenuSettings.IsSelected = true;
     }
-    
+
     /// <summary>手动检查更新</summary>
     private async void OnCheckUpdateClick(object? sender, RoutedEventArgs e)
     {
@@ -175,5 +174,4 @@ public partial class SettingsPage : UserControl
             }, true, "Flat", "Accent")
             .TryShowAsync();
     }
-
 }

@@ -1,6 +1,5 @@
 using System.Diagnostics;
 using System.Globalization;
-using System.Linq;
 using Avalonia;
 using Avalonia.Controls;
 using Avalonia.Data.Converters;
@@ -19,6 +18,11 @@ namespace ChipLauncher.Views;
 /// </summary>
 public partial class ModsPage : UserControl
 {
+    private const string DefaultEmptyHint =
+        "未找到 BepInEx 模组\n请确保游戏已安装 BepInEx\n且模组位于 BepInEx\\plugins 目录";
+
+    private const string SearchNoResultHint =
+        "未找到匹配模组，按 Enter 在 NexusMods 网页中搜索";
     // ── 值转换器 ──────────────────────────────────────────────
 
     /// <summary>启用/禁用 → 状态圆点颜色</summary>
@@ -62,33 +66,27 @@ public partial class ModsPage : UserControl
             : new SolidColorBrush(Color.Parse("#6a2d2d"))
         );
 
-    private const string DefaultEmptyHint =
-        "未找到 BepInEx 模组\n请确保游戏已安装 BepInEx\n且模组位于 BepInEx\\plugins 目录";
-
-    private const string SearchNoResultHint =
-        "未找到匹配模组，按 Enter 在 NexusMods 网页中搜索";
-
-    private List<ModInfo>? _pendingBatchDelete;
+    /// <summary>通过 CheckBox 勾选进行批量操作的模组集合</summary>
+    private readonly HashSet<ModInfo> _batchSelectedMods = new();
 
     private List<ModInfo>? _allMods;
 
     private BepInExConfig? _currentConfig;
 
-    private ModInfo? _selectedMod;
+    // ── 字段 ──────────────────────────────────────────────────
+
+    private string? _gameDir;
 
     private ModInstaller? _installer;
-
-    private bool _sortAscending = true;
-
-    /// <summary>通过 CheckBox 勾选进行批量操作的模组集合</summary>
-    private readonly HashSet<ModInfo> _batchSelectedMods = new();
 
     /// <summary>上一次点击的模组（用于 Shift 连选锚点）</summary>
     private ModInfo? _lastClickedMod;
 
-    // ── 字段 ──────────────────────────────────────────────────
+    private List<ModInfo>? _pendingBatchDelete;
 
-    private string? _gameDir;
+    private ModInfo? _selectedMod;
+
+    private bool _sortAscending = true;
 
     // ── 页面逻辑 ──────────────────────────────────────────────
 
@@ -432,7 +430,7 @@ public partial class ModsPage : UserControl
     ///     ListBox 指针按下事件
     ///     • 普通单击 → 选中查看配置 + 切换批量勾选
     ///     • Shift+单击 → 从上次点击到本次范围内，
-    ///       全部已勾选则全部取消，否则全部勾选
+    ///     全部已勾选则全部取消，否则全部勾选
     /// </summary>
     private void OnModListPointerPressed(object? sender, PointerPressedEventArgs e)
     {
@@ -467,6 +465,7 @@ public partial class ModsPage : UserControl
                 return mod;
             src = src.Parent;
         }
+
         return null;
     }
 
@@ -487,7 +486,11 @@ public partial class ModsPage : UserControl
         // 判断范围内是否全部已勾选
         var allChecked = true;
         for (var i = start; i <= end; i++)
-            if (!source[i].IsChecked) { allChecked = false; break; }
+            if (!source[i].IsChecked)
+            {
+                allChecked = false;
+                break;
+            }
 
         // 全部已勾选 → 全部取消；否则全部勾选
         for (var i = start; i <= end; i++)
@@ -547,7 +550,8 @@ public partial class ModsPage : UserControl
         UpdateBatchButtonTexts();
         var totalCount = (ModListBox.ItemsSource as IList<ModInfo>)?.Count ?? 0;
         BtnBatchSelectAll.Content = _batchSelectedMods.Count >= totalCount && totalCount > 0
-            ? "全不选" : "全选";
+            ? "全不选"
+            : "全选";
         UpdateModStats();
     }
 
@@ -800,10 +804,8 @@ public partial class ModsPage : UserControl
         if (_currentConfig == null) return;
 
         foreach (var entry in _currentConfig.Entries)
-        {
             if (!string.IsNullOrEmpty(entry.DefaultValue))
                 entry.Value = entry.DefaultValue;
-        }
 
         var ok = _currentConfig.Save();
         if (ok)
@@ -995,6 +997,7 @@ public partial class ModsPage : UserControl
             mod.IsChecked = true; // 数据绑定自动更新 CheckBox 视觉状态
             _batchSelectedMods.Add(mod);
         }
+
         BtnBatchSelectAll.Content = "全不选";
         BatchToolbar.IsVisible = true;
         UpdateBatchButtonTexts();

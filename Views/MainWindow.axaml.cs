@@ -1,12 +1,9 @@
 using System.Diagnostics;
-using Avalonia;
 using Avalonia.Controls;
 using Avalonia.Input;
-using Avalonia.Media;
+using Avalonia.Interactivity;
 using Avalonia.Threading;
-using ChipLauncher.Models;
 using ChipLauncher.Services;
-using ChipLauncher.Views;
 using SukiUI.Controls;
 using SukiUI.Dialogs;
 using SukiUI.Toasts;
@@ -18,16 +15,17 @@ namespace ChipLauncher.Views;
 /// </summary>
 public partial class MainWindow : SukiWindow
 {
+    // ===== 窗口级拖放安装模组 =====
+
+    private static readonly HashSet<string> AllowedExtensions = new(StringComparer.OrdinalIgnoreCase)
+    {
+        ".dll", ".zip", ".rar", ".7z", ".tar", ".gz", ".bz2"
+    };
+
     private readonly IGameService _gameService;
     private int _currentTextIndex;
     private string[] _gameTexts = [];
     private DispatcherTimer? _textTimer;
-
-    /// <summary>SukiUI Toast 管理器（全局可访问）</summary>
-    public static ISukiToastManager ToastManager { get; } = new SukiToastManager();
-
-    /// <summary>SukiUI Dialog 管理器（全局可访问）</summary>
-    public static ISukiDialogManager DialogManager { get; } = new SukiDialogManager();
 
     public MainWindow()
     {
@@ -68,9 +66,10 @@ public partial class MainWindow : SukiWindow
                     toast = toast.WithTitle("提示");
                     break;
             }
+
             toast.WithContent(message)
-                 .Dismiss().After(TimeSpan.FromSeconds(4))
-                 .Queue();
+                .Dismiss().After(TimeSpan.FromSeconds(4))
+                .Queue();
         };
 
         // 启动游戏按钮
@@ -85,6 +84,12 @@ public partial class MainWindow : SukiWindow
         LoadGameLocalization();
         CheckBepInExStatus();
     }
+
+    /// <summary>SukiUI Toast 管理器（全局可访问）</summary>
+    public static ISukiToastManager ToastManager { get; } = new SukiToastManager();
+
+    /// <summary>SukiUI Dialog 管理器（全局可访问）</summary>
+    public static ISukiDialogManager DialogManager { get; } = new SukiDialogManager();
 
     /// <inheritdoc />
     /// <summary>
@@ -163,13 +168,6 @@ public partial class MainWindow : SukiWindow
         }
     }
 
-    // ===== 窗口级拖放安装模组 =====
-
-    private static readonly HashSet<string> AllowedExtensions = new(StringComparer.OrdinalIgnoreCase)
-    {
-        ".dll", ".zip", ".rar", ".7z", ".tar", ".gz", ".bz2"
-    };
-
     private void OnWindowDragEnter(object? sender, DragEventArgs e)
     {
         if (!HasCompatibleFile(e)) return;
@@ -196,7 +194,7 @@ public partial class MainWindow : SukiWindow
         WindowDropOverlay.IsVisible = true;
     }
 
-    private void OnWindowDragLeave(object? sender, Avalonia.Interactivity.RoutedEventArgs e)
+    private void OnWindowDragLeave(object? sender, RoutedEventArgs e)
     {
         WindowDropOverlay.IsVisible = false;
     }
@@ -344,4 +342,3 @@ public partial class MainWindow : SukiWindow
         }
     }
 }
-

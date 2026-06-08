@@ -7,6 +7,7 @@
 ## 功能
 
 ### 📦 模组管理
+
 - 自动扫描 `BepInEx/plugins` 目录子文件夹，识别已安装模组
 - 智能读取 BepInEx 插件的 `[BepInPlugin]` 特性元数据（GUID、名称、版本）
 - 安装模组（支持 `.dll` 文件和 `.zip`/`.7z`/`.rar` 等压缩包）
@@ -16,12 +17,14 @@
 - 模组搜索与排序
 
 ### ⚙️ BepInEx 配置编辑
+
 - 可视化编辑 `BepInEx/config` 下的 `.cfg` 配置文件
 - 支持修改配置项的值
 - 一键重置配置为默认值
 - 直接在文件管理器中打开配置文件夹
 
 ### 🔄 批量操作
+
 - ✅ 多选模式（点击复选框或按住 Shift 范围选择）
 - 批量启用、批量禁用
 - 批量删除（含确认弹窗）
@@ -29,45 +32,52 @@
 - 全选/全不选
 
 ### 🖥️ 启动页管理
+
 - 自定义启动页面（新闻、模组管理、设置、关于）
 - 游戏信息轮播显示（从游戏本地化文件中提取文本）
 
 ### 📰 新闻资讯
+
 - 从 Steam RSS 拉取游戏新闻
 - 离线缓存
 - 新闻搜索
 
 ### 🔔 自动更新检测
+
 - 启动时自动检查 GitHub Releases 新版本
 - 可在设置中关闭自动检测
 - 手动检测更新
 
 ### 🎮 游戏启动
+
 - 一键启动游戏
 - 自动检测 Steam 游戏路径
 - 检测 BepInEx 是否已安装
 
 ## 技术栈
 
-| 技术 | 版本 |
-|------|------|
-| [Avalonia](https://avaloniaui.net/) | 11.3.14 |
-| [SukiUI](https://github.com/kikipoulet/SukiUI) | 6.1.1 |
-| .NET | 8.0 |
-| [SharpCompress](https://github.com/adamhathcock/sharpcompress) | 0.49.1 |
-| System.Reflection.Metadata | PEReader |
+| 技术                                                             | 版本       |
+|----------------------------------------------------------------|----------|
+| [Avalonia](https://avaloniaui.net/)                            | 11.3.14  |
+| [SukiUI](https://github.com/kikipoulet/SukiUI)                 | 6.1.1    |
+| .NET                                                           | 8.0      |
+| [SharpCompress](https://github.com/adamhathcock/sharpcompress) | 0.49.1   |
+| System.Reflection.Metadata                                     | PEReader |
 
 ## 构建与发布
 
 ### 前置要求
+
 - [.NET 8.0 SDK](https://dotnet.microsoft.com/download/dotnet/8.0)
 
 ### 调试构建
+
 ```bash
 dotnet build
 ```
 
 ### 发布（单文件）
+
 ```bash
 dotnet publish -c Release -p:PublishDir=publish -p:PublishSingleFile=true -p:IncludeNativeLibrariesForSelfExtract=true -p:SelfContained=true -p:RuntimeIdentifier=win-x64
 ```
@@ -77,6 +87,7 @@ dotnet publish -c Release -p:PublishDir=publish -p:PublishSingleFile=true -p:Inc
 也可使用 Rider 内置的 **Publish** 运行配置（已配置好）。
 
 ### 版本号
+
 版本号在 [`Models/LauncherInfo.cs`](Models/LauncherInfo.cs:5) 中定义，发布新版本前请手动更新。
 
 ## 项目结构

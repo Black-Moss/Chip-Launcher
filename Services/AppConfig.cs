@@ -16,6 +16,8 @@ public class AppConfig : INotifyPropertyChanged
             "config.json");
 
     private static readonly TimeSpan SaveDebounce = TimeSpan.FromMilliseconds(500);
+    private bool _autoCheckUpdates = true;
+    private bool _confirmModDeletion = true;
 
     private string _defaultPage = "News";
 
@@ -24,8 +26,6 @@ public class AppConfig : INotifyPropertyChanged
     private string? _gamePath;
 
     private int _maxRetries = 5;
-    private bool _confirmModDeletion = true;
-    private bool _autoCheckUpdates = true;
 
     // ── 防抖保存 ──────────────────────────────────────────────
 

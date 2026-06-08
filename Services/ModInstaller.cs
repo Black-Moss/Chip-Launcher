@@ -1,7 +1,7 @@
-using System.Reflection;
 using System.Reflection.Metadata;
 using System.Reflection.PortableExecutable;
 using System.Runtime.InteropServices;
+using System.Text;
 using SharpCompress.Archives;
 using SharpCompress.Common;
 using SharpCompress.Readers;
@@ -250,7 +250,8 @@ public class ModInstaller
                     var attrTypeName = GetAttributeTypeName(metadataReader, attr.Constructor);
                     if (attrTypeName == null) continue;
                     if (attrTypeName != "BepInPlugin" && attrTypeName != "BepInPluginAttribute"
-                        && !attrTypeName.EndsWith(".BepInPlugin") && !attrTypeName.EndsWith(".BepInPluginAttribute"))
+                                                      && !attrTypeName.EndsWith(".BepInPlugin") &&
+                                                      !attrTypeName.EndsWith(".BepInPluginAttribute"))
                         continue;
 
                     // 解析 BepInPlugin(Guid, Name, Version) 的三个字符串参数
@@ -282,6 +283,7 @@ public class ModInstaller
                     var name = reader.GetString(typeRef.Name);
                     return string.IsNullOrEmpty(nameSpace) ? name : $"{nameSpace}.{name}";
                 }
+
                 if (memberRef.Parent.Kind == HandleKind.TypeDefinition)
                 {
                     var typeDef = reader.GetTypeDefinition((TypeDefinitionHandle)memberRef.Parent);
@@ -355,7 +357,7 @@ public class ModInstaller
 
         if (length == 0) return string.Empty;
         var chars = reader.ReadBytes(length);
-        return System.Text.Encoding.UTF8.GetString(chars);
+        return Encoding.UTF8.GetString(chars);
     }
 
     /// <summary>获取程序集解析搜索目录列表（含 BepInEx/core）</summary>

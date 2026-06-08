@@ -1,13 +1,12 @@
 using System.Diagnostics;
 using System.Reflection;
+using System.Runtime.InteropServices;
+using Avalonia;
 using Avalonia.Controls;
 using Avalonia.Input;
-using Avalonia.Interactivity;
 using Avalonia.Media.Imaging;
 using Avalonia.Platform;
 using ChipLauncher.Models;
-using ChipLauncher.Services;
-using SukiUI.Dialogs;
 
 namespace ChipLauncher.Views;
 
@@ -61,7 +60,7 @@ public partial class AboutPage : UserControl
             if (count == 0) return;
 
             // 取第一个条目的数据偏移和大小
-            var imageSize   = BitConverter.ToInt32(data, 14);
+            var imageSize = BitConverter.ToInt32(data, 14);
             var imageOffset = BitConverter.ToInt32(data, 18);
             if (imageOffset + imageSize > data.Length) return;
 
@@ -81,25 +80,25 @@ public partial class AboutPage : UserControl
             }
 
             // 解析 BITMAPINFOHEADER
-            var biSize = BitConverter.ToInt32(data, imageOffset);       // 通常 40
+            var biSize = BitConverter.ToInt32(data, imageOffset); // 通常 40
             var biWidth = BitConverter.ToInt32(data, imageOffset + 4);
             var biHeight = BitConverter.ToInt32(data, imageOffset + 8); // ICO 中翻倍
             var biBitCount = BitConverter.ToInt16(data, imageOffset + 14);
 
             var actualHeight = biHeight / 2;
-            var rowSize = ((biWidth * biBitCount + 31) / 32) * 4;       // 4 字节对齐行宽
-            var pixelDataSize = rowSize * actualHeight;                 // 仅 XOR 像素，不含 AND mask
+            var rowSize = (biWidth * biBitCount + 31) / 32 * 4; // 4 字节对齐行宽
+            var pixelDataSize = rowSize * actualHeight; // 仅 XOR 像素，不含 AND mask
 
             // 直接用 WriteableBitmap 写入原始 BGRA 像素，保留 alpha 通道
             var writeableBitmap = new WriteableBitmap(
-                new Avalonia.PixelSize(biWidth, actualHeight),
-                new Avalonia.Vector(96, 96),
+                new PixelSize(biWidth, actualHeight),
+                new Vector(96, 96),
                 PixelFormat.Bgra8888,
                 AlphaFormat.Unpremul);
 
             using (var locked = writeableBitmap.Lock())
             {
-                System.Runtime.InteropServices.Marshal.Copy(
+                Marshal.Copy(
                     data, imageOffset + biSize, locked.Address, pixelDataSize);
             }
 

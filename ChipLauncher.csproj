@@ -13,20 +13,20 @@
     </PropertyGroup>
 
     <ItemGroup>
-        <EmbeddedResource Include="ChipLauncher.ico" />
+        <EmbeddedResource Include="ChipLauncher.ico"/>
     </ItemGroup>
 
     <ItemGroup>
-        <PackageReference Include="Avalonia" Version="11.3.14" />
-        <PackageReference Include="Avalonia.Desktop" Version="11.3.14" />
-        <PackageReference Include="Avalonia.Themes.Fluent" Version="11.3.14" />
-        <PackageReference Include="Avalonia.Fonts.Inter" Version="11.3.14" />
-        <PackageReference Include="SharpCompress" Version="0.49.1" />
-        <PackageReference Include="SukiUI" Version="6.1.1" />
-        <PackageReference Include="System.Reflection.MetadataLoadContext" Version="10.0.8" />
+        <PackageReference Include="Avalonia" Version="11.3.14"/>
+        <PackageReference Include="Avalonia.Desktop" Version="11.3.14"/>
+        <PackageReference Include="Avalonia.Themes.Fluent" Version="11.3.14"/>
+        <PackageReference Include="Avalonia.Fonts.Inter" Version="11.3.14"/>
+        <PackageReference Include="SharpCompress" Version="0.49.1"/>
+        <PackageReference Include="SukiUI" Version="6.1.1"/>
+        <PackageReference Include="System.Reflection.MetadataLoadContext" Version="10.0.8"/>
     </ItemGroup>
 
     <ItemGroup>
-        <Folder Include="obj\" />
+        <Folder Include="obj\"/>
     </ItemGroup>
 </Project>

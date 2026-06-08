@@ -83,11 +83,11 @@ public partial class NewsService : INewsService
             return cached;
 
         // 2. 无任何缓存 → 发起 HTTP 请求（指定简体中文）
-        var url = $"https://store.steampowered.com/feeds/news/app/4576490/?l=schinese";
+        var url = "https://store.steampowered.com/feeds/news/app/4576490/?l=schinese";
 
         try
         {
-            Logger.Info($"正在获取 Steam 资讯");
+            Logger.Info("正在获取 Steam 资讯");
             var xml = await _httpClient.GetStringAsync(url);
             var items = ParseSteamRss(xml);
 
@@ -138,7 +138,6 @@ public partial class NewsService : INewsService
         MemCache["4576490"] = new CacheEntry { Items = fileItems };
         Logger.Info($"从本地文件加载资讯缓存 ({fileItems.Count} 条)");
         return fileItems;
-
     }
 
     /// <summary>从本地 JSON 文件中读取指定 appId 的缓存数据</summary>
@@ -153,8 +152,8 @@ public partial class NewsService : INewsService
             {
                 var json = File.ReadAllText(CacheFilePath);
                 var data = JsonSerializer.Deserialize<Dictionary<string, List<NewsItem>>>(json);
-                if (data != null 
-                    && data.TryGetValue("4576490", out var items) 
+                if (data != null
+                    && data.TryGetValue("4576490", out var items)
                     && items.Count > 0)
                     return items;
             }

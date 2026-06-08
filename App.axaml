@@ -4,6 +4,6 @@
              x:Class="ChipLauncher.App">
 
     <Application.Styles>
-        <suki:SukiTheme ThemeColor="Blue"/>
+        <suki:SukiTheme ThemeColor="Blue" />
     </Application.Styles>
 </Application>

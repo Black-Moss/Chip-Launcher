@@ -9,6 +9,8 @@ namespace ChipLauncher.Models;
 /// </summary>
 public class ModInfo : INotifyPropertyChanged
 {
+    private bool _isChecked;
+
     /// <summary>模组显示名称（目录名）</summary>
     public string Name { get; init; } = string.Empty;
 
@@ -30,8 +32,6 @@ public class ModInfo : INotifyPropertyChanged
             /* 由切换逻辑控制 */
         }
     }
-
-    private bool _isChecked;
 
     /// <summary>复选框是否选中（用于批量操作）</summary>
     public bool IsChecked

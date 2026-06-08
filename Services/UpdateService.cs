@@ -1,4 +1,3 @@
-using System.Diagnostics;
 using System.Text.Json;
 using ChipLauncher.Models;
 
@@ -61,9 +60,7 @@ public static class UpdateService
     {
         if (Version.TryParse(latest, out var latestV) &&
             Version.TryParse(current, out var currentV))
-        {
             return latestV > currentV;
-        }
 
         // 解析失败时按字符串比较
         return string.Compare(latest, current, StringComparison.OrdinalIgnoreCase) > 0;
