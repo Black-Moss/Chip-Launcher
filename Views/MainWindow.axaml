@@ -2,7 +2,7 @@
         xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
         x:Class="ChipLauncher.Views.MainWindow"
         Title="Chip Launcher"
-        Height="550" Width="800"
+        Height="650" Width="900"
         WindowStartupLocation="CenterScreen"
         SystemDecorations="None"
         Background="#000000">

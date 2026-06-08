@@ -9,31 +9,74 @@
             <Border BorderBrush="{StaticResource BorderBrush}"
                     BorderThickness="0,0,1,0"
                     Margin="0,0,10,0">
-                <ListBox Name="NewsListBox"
-                         Background="Transparent"
-                         BorderThickness="0"
-                         ScrollViewer.HorizontalScrollBarVisibility="Disabled">
-                    <ListBox.ItemTemplate>
-                        <DataTemplate>
-                            <Border Padding="12,10" Margin="0,0,0,4"
-                                    BorderBrush="{StaticResource BorderBrush}"
-                                    BorderThickness="0,0,0,1">
-                                <Grid RowDefinitions="Auto,Auto">
-                                    <TextBlock Text="{Binding Title}"
-                                               FontSize="14"
-                                               FontWeight="Bold"
-                                               Foreground="{StaticResource TextPrimaryBrush}"
-                                               TextWrapping="Wrap"
-                                               Margin="0,0,0,4" />
-                                    <TextBlock Grid.Row="1"
-                                               Text="{Binding PublishDate, StringFormat={}{0:yyyy-MM-dd}}"
-                                               FontSize="11"
-                                               Foreground="{StaticResource TextSecondaryBrush}" />
-                                </Grid>
-                            </Border>
-                        </DataTemplate>
-                    </ListBox.ItemTemplate>
-                </ListBox>
+                <Grid RowDefinitions="Auto,Auto,*">
+                    <!-- 标题 + 刷新按钮 -->
+                    <Grid ColumnDefinitions="*,Auto" Margin="0,0,0,6">
+                        <TextBlock Text="游戏资讯"
+                                   FontSize="18"
+                                   FontWeight="Bold"
+                                   Foreground="{StaticResource TextPrimaryBrush}"
+                                   VerticalAlignment="Center" />
+                        <Button x:Name="RefreshButton"
+                                Grid.Column="1"
+                                Content="🔄 刷新"
+                                Padding="12,5"
+                                FontSize="13"
+                                Cursor="Hand" />
+                    </Grid>
+                    <!-- 搜索框 -->
+                    <TextBox Name="NewsSearchBox"
+                             Grid.Row="1"
+                             Watermark="搜索资讯…"
+                             FontSize="13"
+                             Padding="8,5"
+                             Margin="0,0,0,6"
+                             Background="#1a1a1a"
+                             Foreground="{StaticResource TextPrimaryBrush}"
+                             BorderBrush="{StaticResource BorderBrush}"
+                             BorderThickness="1"
+                             />
+                    <ListBox Name="NewsListBox"
+                             Grid.Row="2"
+                             Background="Transparent"
+                             BorderThickness="0"
+                             ScrollViewer.HorizontalScrollBarVisibility="Disabled">
+                        <ListBox.Styles>
+                            <Style Selector="ListBoxItem">
+                                <Setter Property="Background" Value="Transparent" />
+                            </Style>
+                            <Style Selector="ListBoxItem:selected">
+                                <Setter Property="Background" Value="#555555" />
+                            </Style>
+                            <Style Selector="ListBoxItem:selected /template/ ContentPresenter">
+                                <Setter Property="Background" Value="#555555" />
+                            </Style>
+                            <Style Selector="ListBoxItem:focus /template/ ContentPresenter">
+                                <Setter Property="Background" Value="#555555" />
+                            </Style>
+                        </ListBox.Styles>
+                        <ListBox.ItemTemplate>
+                            <DataTemplate>
+                                <Border Padding="12,10" Margin="0,0,0,4"
+                                        BorderBrush="{StaticResource BorderBrush}"
+                                        BorderThickness="0,0,0,1">
+                                    <Grid RowDefinitions="Auto,Auto">
+                                        <TextBlock Text="{Binding Title}"
+                                                   FontSize="14"
+                                                   FontWeight="Bold"
+                                                   Foreground="{StaticResource TextPrimaryBrush}"
+                                                   TextWrapping="Wrap"
+                                                   Margin="0,0,0,4" />
+                                        <TextBlock Grid.Row="1"
+                                                   Text="{Binding PublishDate, StringFormat={}{0:yyyy-MM-dd}}"
+                                                   FontSize="11"
+                                                   Foreground="{StaticResource TextSecondaryBrush}" />
+                                    </Grid>
+                                </Border>
+                            </DataTemplate>
+                        </ListBox.ItemTemplate>
+                    </ListBox>
+                </Grid>
             </Border>
 
             <!-- 右侧详细内容 -->
@@ -41,18 +84,22 @@
                           VerticalScrollBarVisibility="Auto">
                 <Grid Margin="10,0,0,0" RowDefinitions="Auto,Auto,Auto,*">
 
-                    <TextBlock Name="TitleText"
+                    <SelectableTextBlock Name="TitleText"
                                FontSize="18"
                                FontWeight="Bold"
                                Foreground="{StaticResource TextPrimaryBrush}"
                                TextWrapping="Wrap"
-                               Margin="0,0,0,8" />
+                               Margin="0,0,0,6"
+                               SelectionBrush="#555555"
+                               SelectionForegroundBrush="White" />
 
-                    <TextBlock Name="DateText"
+                    <SelectableTextBlock Name="DateText"
                                Grid.Row="1"
                                FontSize="12"
                                Foreground="{StaticResource TextSecondaryBrush}"
-                               Margin="0,0,0,8" />
+                               Margin="0,0,0,6"
+                               SelectionBrush="#555555"
+                               SelectionForegroundBrush="White" />
 
                     <!-- 打开原文按钮（日期下方） -->
                     <Button Name="OpenUrlButton"
@@ -64,11 +111,13 @@
                             Margin="0,0,0,12"
                             IsVisible="False" />
 
-                    <TextBlock Name="ContentText"
-                               Grid.Row="3"
-                               FontSize="14"
-                               Foreground="{StaticResource TextSecondaryBrush}"
-                               TextWrapping="Wrap" />
+                    <SelectableTextBlock Name="ContentText"
+                                         Grid.Row="3"
+                                         FontSize="14"
+                                         Foreground="{StaticResource TextSecondaryBrush}"
+                                         TextWrapping="Wrap"
+                                         SelectionBrush="#555555"
+                                         SelectionForegroundBrush="White" />
                 </Grid>
             </ScrollViewer>
         </Grid>

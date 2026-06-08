@@ -82,8 +82,8 @@ public partial class NewsService : INewsService
         if (cached != null)
             return cached;
 
-        // 2. 无任何缓存 → 发起 HTTP 请求
-        var url = $"https://store.steampowered.com/feeds/news/app/{appId}/";
+        // 2. 无任何缓存 → 发起 HTTP 请求（指定简体中文）
+        var url = $"https://store.steampowered.com/feeds/news/app/{appId}/?l=schinese";
 
         try
         {

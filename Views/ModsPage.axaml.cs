@@ -54,6 +54,7 @@ public partial class ModsPage : UserControl
     // ── 字段 ──────────────────────────────────────────────────
 
     private string? _gameDir;
+    private List<ModInfo>? _allMods;
 
     // ── 页面逻辑 ──────────────────────────────────────────────
 
@@ -61,6 +62,27 @@ public partial class ModsPage : UserControl
     {
         InitializeComponent();
         Loaded += (_, _) => LoadMods();
+        ModSearchBox.TextChanged += OnModSearchChanged;
+    }
+
+    /// <summary>搜索框文本变化 → 过滤模组列表</summary>
+    private void OnModSearchChanged(object? sender, TextChangedEventArgs e)
+    {
+        if (_allMods == null) return;
+
+        var keyword = ModSearchBox.Text?.Trim();
+        if (string.IsNullOrEmpty(keyword))
+        {
+            ModListBox.ItemsSource = _allMods;
+            return;
+        }
+
+        var filtered = _allMods
+            .Where(m => m.Name.Contains(keyword, StringComparison.OrdinalIgnoreCase))
+            .ToList();
+        ModListBox.ItemsSource = filtered;
+        ModListBox.IsVisible = filtered.Count > 0;
+        EmptyHint.IsVisible = filtered.Count == 0;
     }
 
     /// <summary>扫描 BepInEx\plugins 子目录加载模组列表</summary>
@@ -112,9 +134,25 @@ public partial class ModsPage : UserControl
 
             mods.Sort((a, b) => string.Compare(a.Name, b.Name, StringComparison.OrdinalIgnoreCase));
 
-            ModListBox.ItemsSource = mods;
-            ModListBox.IsVisible = mods.Count > 0;
-            EmptyHint.IsVisible = mods.Count == 0;
+            _allMods = mods;
+
+            // 如果有搜索关键词，应用过滤
+            var keyword = ModSearchBox.Text?.Trim();
+            if (string.IsNullOrEmpty(keyword))
+            {
+                ModListBox.ItemsSource = mods;
+                ModListBox.IsVisible = mods.Count > 0;
+                EmptyHint.IsVisible = mods.Count == 0;
+            }
+            else
+            {
+                var filtered = mods
+                    .Where(m => m.Name.Contains(keyword, StringComparison.OrdinalIgnoreCase))
+                    .ToList();
+                ModListBox.ItemsSource = filtered;
+                ModListBox.IsVisible = filtered.Count > 0;
+                EmptyHint.IsVisible = filtered.Count == 0;
+            }
         }
         catch (Exception ex)
         {

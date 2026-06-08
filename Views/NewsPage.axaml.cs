@@ -14,6 +14,7 @@ public partial class NewsPage : UserControl
     private readonly INewsService _newsService;
     private string _currentUrl = string.Empty;
     private bool _selectionHooked;
+    private List<NewsItem>? _allNews;
 
     public NewsPage()
     {
@@ -22,8 +23,29 @@ public partial class NewsPage : UserControl
 
         Loaded += async (_, _) => await OnPageLoadedAsync();
         OpenUrlButton.Click += OnOpenUrlClick;
-        // 重试按钮：通过 FindControl 查找（Avalonia 中 x:Name 在模板内可能不可直接访问）
+        // 重试按钮
         RetryButton.Click += OnRetryClick;
+        RefreshButton.Click += OnRefreshClick;
+        NewsSearchBox.TextChanged += OnNewsSearchChanged;
+    }
+
+    /// <summary>搜索框文本变化 → 过滤新闻列表</summary>
+    private void OnNewsSearchChanged(object? sender, TextChangedEventArgs e)
+    {
+        if (_allNews == null) return;
+
+        var keyword = NewsSearchBox.Text?.Trim();
+        if (string.IsNullOrEmpty(keyword))
+        {
+            NewsListBox.ItemsSource = _allNews;
+            return;
+        }
+
+        var filtered = _allNews
+            .Where(n => n.Title.Contains(keyword, StringComparison.OrdinalIgnoreCase)
+                     || n.Content.Contains(keyword, StringComparison.OrdinalIgnoreCase))
+            .ToList();
+        NewsListBox.ItemsSource = filtered;
     }
 
     /// <summary>页面加载时：优先使用缓存，无缓存则发起请求</summary>
@@ -61,7 +83,21 @@ public partial class NewsPage : UserControl
     /// <summary>绑定新闻数据到界面</summary>
     private void BindNews(List<NewsItem> items)
     {
-        NewsListBox.ItemsSource = items;
+        _allNews = items;
+        // 如果有搜索关键词，应用过滤
+        var keyword = NewsSearchBox.Text?.Trim();
+        if (string.IsNullOrEmpty(keyword))
+        {
+            NewsListBox.ItemsSource = items;
+        }
+        else
+        {
+            var filtered = items
+                .Where(n => n.Title.Contains(keyword, StringComparison.OrdinalIgnoreCase)
+                         || n.Content.Contains(keyword, StringComparison.OrdinalIgnoreCase))
+                .ToList();
+            NewsListBox.ItemsSource = filtered;
+        }
 
         // 先注册事件，再设置选中项，确保第一次选中时也能触发详情显示
         if (!_selectionHooked)
@@ -108,6 +144,20 @@ public partial class NewsPage : UserControl
         catch (Exception ex)
         {
             Logger.Error($"重试按钮出错: {ex.Message}");
+        }
+    }
+
+    /// <summary>刷新按钮点击 — 清除缓存后重新拉取</summary>
+    private async void OnRefreshClick(object? sender, RoutedEventArgs e)
+    {
+        try
+        {
+            NewsService.ClearCache();
+            await FetchNewsAsync();
+        }
+        catch (Exception ex)
+        {
+            Logger.Error($"刷新资讯出错: {ex.Message}");
         }
     }
 

@@ -5,7 +5,7 @@
     <Grid Margin="15" ColumnDefinitions="300,5,*">
 
         <!-- ══════ 左侧：模组列表 ══════ -->
-        <Grid RowDefinitions="Auto,Auto,*">
+        <Grid RowDefinitions="Auto,Auto,Auto,*">
 
             <TextBlock Text="模组管理"
                        Classes="PageTitle" />
@@ -14,10 +14,23 @@
                        Text="已安装的模组"
                        FontSize="13"
                        Foreground="#888"
-                       Margin="0,2,0,6" />
+                       Margin="0,2,0,4" />
+
+            <!-- 搜索框 -->
+            <TextBox Name="ModSearchBox"
+                     Grid.Row="2"
+                     Watermark="搜索模组…"
+                     FontSize="13"
+                     Padding="8,5"
+                     Margin="0,0,0,6"
+                     Background="#1a1a1a"
+                     Foreground="{StaticResource TextPrimaryBrush}"
+                     BorderBrush="{StaticResource BorderBrush}"
+                     BorderThickness="1"
+                     />
 
             <ListBox Name="ModListBox"
-                     Grid.Row="2"
+                     Grid.Row="3"
                      Background="Transparent"
                      BorderThickness="0"
                      ScrollViewer.HorizontalScrollBarVisibility="Disabled"
@@ -70,7 +83,7 @@
             </ListBox>
 
             <TextBlock Name="EmptyHint"
-                       Grid.Row="2"
+                       Grid.Row="3"
                        Text="未找到 BepInEx 模组&#x0a;请确保游戏已安装 BepInEx&#x0a;且模组位于 BepInEx\plugins 目录"
                        FontSize="13"
                        Foreground="#888"
@@ -80,7 +93,7 @@
                        IsVisible="False" />
 
             <TextBlock Name="ErrorHint"
-                       Grid.Row="2"
+                       Grid.Row="3"
                        Text=""
                        FontSize="13"
                        Foreground="#e74c3c"

@@ -2,6 +2,7 @@ using System.Runtime.InteropServices;
 using Avalonia;
 using Avalonia.Controls;
 using Avalonia.Input;
+using Avalonia.Media;
 using Avalonia.Threading;
 using ChipLauncher.Services;
 
@@ -15,6 +16,7 @@ public partial class MainWindow : Window
     private const int WindowCornerRadius = 10;
 
     private readonly IGameService _gameService;
+    private string? _currentNav; // 当前导航页面标识
     private int _currentTextIndex;
     private string[] _gameTexts = [];
     private DispatcherTimer? _textTimer;
@@ -39,29 +41,19 @@ public partial class MainWindow : Window
 
         // 导航按钮事件（使用 PointerPressed 替代 Click，因为 Border 没有 Click 事件）
         BtnPlay.PointerPressed += (_, _) => LaunchGame();
-        BtnMods.PointerPressed += (_, _) =>
-        {
-            Logger.Info("导航到: 模组管理");
-            ContentFrame.Content = new ModsPage();
-        };
-        BtnNews.PointerPressed += (_, _) =>
-        {
-            Logger.Info("导航到: 游戏资讯");
-            ContentFrame.Content = new NewsPage();
-        };
-        BtnSettings.PointerPressed += (_, _) =>
-        {
-            Logger.Info("导航到: 设置");
-            ContentFrame.Content = new SettingsPage();
-        };
+        BtnMods.PointerPressed += (_, _) => NavigateTo("Mods", () => new ModsPage());
+        BtnNews.PointerPressed += (_, _) => NavigateTo("News", () => new NewsPage());
+        BtnSettings.PointerPressed += (_, _) => NavigateTo("Settings", () => new SettingsPage());
 
         // 根据配置显示默认页面
-        ContentFrame.Content = AppConfig.Instance.DefaultPage switch
+        var defaultPage = AppConfig.Instance.DefaultPage;
+        ContentFrame.Content = defaultPage switch
         {
             "Mods" => new ModsPage(),
             "Settings" => new SettingsPage(),
-            _ => new NewsPage(),
+            _ => new NewsPage()
         };
+        HighlightNav(defaultPage == "Mods" ? "Mods" : defaultPage == "Settings" ? "Settings" : "News");
 
         // 窗口控制按钮
         BtnMinimize.Click += (_, _) => WindowState = WindowState.Minimized;
@@ -198,6 +190,57 @@ public partial class MainWindow : Window
             ShowCurrentText();
         };
         _textTimer.Start();
+    }
+
+    // ===== 导航逻辑 =====
+
+    /// <summary>导航到指定页面，如果已在则跳过</summary>
+    private void NavigateTo(string page, Func<Control> createPage)
+    {
+        if (_currentNav == page)
+        {
+            Logger.Info($"已在 {page} 页面，跳过导航");
+            return;
+        }
+
+        Logger.Info($"导航到: {page}");
+        _currentNav = page;
+        ContentFrame.Content = createPage();
+        HighlightNav(page);
+    }
+
+    /// <summary>更新导航栏高亮状态</summary>
+    private void HighlightNav(string? page)
+    {
+        // 所有按钮恢复默认样式
+        ResetNavStyle(BtnPlay);
+        ResetNavStyle(BtnMods);
+        ResetNavStyle(BtnNews);
+        ResetNavStyle(BtnSettings);
+
+        // 高亮当前页面按钮
+        var target = page switch
+        {
+            "Mods" => BtnMods,
+            "News" => BtnNews,
+            "Settings" => BtnSettings,
+            _ => null
+        };
+
+        if (target != null)
+        {
+            target.Background = new SolidColorBrush(Color.FromRgb(51, 51, 51));
+            if (target.Child is TextBlock tb)
+                tb.Foreground = new SolidColorBrush(Colors.White);
+        }
+    }
+
+    /// <summary>将导航按钮重置为默认样式</summary>
+    private static void ResetNavStyle(Border border)
+    {
+        border.Background = new SolidColorBrush(Colors.Transparent);
+        if (border.Child is TextBlock tb)
+            tb.Foreground = new SolidColorBrush(Color.FromRgb(204, 204, 204));
     }
 
     // ===== 游戏启动 =====

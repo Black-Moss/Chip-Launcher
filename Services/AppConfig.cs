@@ -17,6 +17,8 @@ public class AppConfig : INotifyPropertyChanged
 
     private static readonly TimeSpan SaveDebounce = TimeSpan.FromMilliseconds(500);
 
+    private string _defaultPage = "News";
+
     // ── 属性 ──────────────────────────────────────────────────
 
     private string? _gamePath;
@@ -26,8 +28,6 @@ public class AppConfig : INotifyPropertyChanged
     // ── 防抖保存 ──────────────────────────────────────────────
 
     private CancellationTokenSource? _saveCts;
-
-    private string _defaultPage = "News";
 
     private int _textRotationInterval = 3;
 
