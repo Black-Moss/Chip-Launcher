@@ -102,14 +102,15 @@ public static class GameLocalization
         return FindSteamGamePath();
     }
 
-    /// <summary>检查游戏目录是否已安装 BepInEx（检测 BepInEx/core/ 是否存在）</summary>
+    /// <summary>检查游戏目录是否已安装 BepInEx（检测 .doorstop_version + BepInEx 目录 + winhttp.dll）</summary>
     public static bool IsBepInExInstalled()
     {
         var gameDir = GetGameDirectory();
         if (string.IsNullOrEmpty(gameDir)) return false;
 
-        var bepInExCore = Path.Combine(gameDir, "BepInEx", "core");
-        return Directory.Exists(bepInExCore) && Directory.GetFiles(bepInExCore, "*.dll").Length > 0;
+        return File.Exists(Path.Combine(gameDir, ".doorstop_version")) &&
+               Directory.Exists(Path.Combine(gameDir, "BepInEx")) &&
+               File.Exists(Path.Combine(gameDir, "winhttp.dll"));
     }
 
     /// <summary>从 Steam 注册表/库查找游戏安装路径</summary>

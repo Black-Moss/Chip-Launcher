@@ -3,7 +3,7 @@
                  xmlns:suki="clr-namespace:SukiUI.Controls;assembly=SukiUI"
                  xmlns:local="clr-namespace:ChipLauncher.Views"
                  x:Class="ChipLauncher.Views.MainWindow"
-                 Title=""
+                 Title="Chip Launcher"
                  Height="650" Width="900"
                  MinHeight="650" MinWidth="900"
                  WindowStartupLocation="CenterScreen"
@@ -49,28 +49,34 @@
                     </DataTemplate>
                 </ItemsControl.ItemTemplate>
             </ItemsControl>
-
-            <!-- BepInEx 警告 -->
-            <Border Name="BepInExWarning"
-                    VerticalAlignment="Center"
-                    Background="#3d1a00"
-                    CornerRadius="4"
-                    Padding="8,3"
-                    IsVisible="False">
-                <TextBlock Text="⚠ BepInEx 未安装"
-                           FontSize="11"
-                           Foreground="#e67e22" />
-            </Border>
         </StackPanel>
     </suki:SukiWindow.LogoContent>
 
     <!-- 标题栏右侧：启动游戏按钮（SukiUI Flat 样式，始终可见） -->
     <suki:SukiWindow.RightWindowTitleBarControls>
-        <Button Classes="Flat"
-                Content="启动游戏"
-                FontSize="11"
-                Padding="8,3"
-                x:Name="BtnPlayCompact" />
+        <StackPanel Orientation="Horizontal"
+                    VerticalAlignment="Center"
+                    Spacing="12">
+            <!-- BepInEx 警告（点击打开安装对话框） -->
+            <Border Name="BepInExWarning"
+                    Classes="Flat Accent"
+                    VerticalAlignment="Center"
+                    Background="#3d1a00"
+                    CornerRadius="4"
+                    Padding="8,3"
+                    Cursor="Hand"
+                    IsVisible="False"
+                    PointerPressed="OnBepInExWarningClick">
+                <TextBlock Text="⚠ BepInEx 未安装"
+                           FontSize="11"
+                           Foreground="#e67e22" />
+            </Border>
+            <Button Classes="Flat"
+                    Content="启动游戏"
+                    FontSize="11"
+                    Padding="8,3"
+                    x:Name="BtnPlayCompact" />
+        </StackPanel>
     </suki:SukiWindow.RightWindowTitleBarControls>
 
     <!-- 主内容区 -->
@@ -142,7 +148,7 @@
                     HorizontalAlignment="Center"
                     Padding="50,35">
                 <StackPanel Spacing="12" HorizontalAlignment="Center">
-                    <TextBlock Text="📦 释放以安装模组"
+                    <TextBlock Name="WindowDropOverlayTitle"
                                FontSize="22"
                                Foreground="#e67e22"
                                HorizontalAlignment="Center" />

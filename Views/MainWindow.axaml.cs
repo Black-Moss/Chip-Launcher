@@ -2,8 +2,12 @@ using System.Diagnostics;
 using Avalonia.Controls;
 using Avalonia.Input;
 using Avalonia.Interactivity;
+using Avalonia.Platform.Storage;
 using Avalonia.Threading;
 using ChipLauncher.Services;
+using SharpCompress.Archives;
+using SharpCompress.Common;
+using SharpCompress.Readers;
 using SukiUI.Controls;
 using SukiUI.Dialogs;
 using SukiUI.Toasts;
@@ -26,6 +30,8 @@ public partial class MainWindow : SukiWindow
     private int _currentTextIndex;
     private string[] _gameTexts = [];
     private DispatcherTimer? _textTimer;
+    private ISukiDialog? _bepInExDialog;
+    private bool _isBepInExDialogActive;
 
     public MainWindow()
     {
@@ -82,7 +88,9 @@ public partial class MainWindow : SukiWindow
         // 启动时后台任务
         _ = PrefetchNewsAsync();
         LoadGameLocalization();
-        CheckBepInExStatus();
+
+        // 初始化拖放遮罩标题
+        WindowDropOverlayTitle.Text = "📦 释放以安装模组";
     }
 
     /// <summary>SukiUI Toast 管理器（全局可访问）</summary>
@@ -109,6 +117,9 @@ public partial class MainWindow : SukiWindow
         // 启动后检查更新（延迟让 UI 先渲染完成）
         if (AppConfig.Instance.AutoCheckUpdates)
             _ = CheckForUpdatesAsync();
+
+        // 检查 BepInEx 状态（窗口就绪后弹窗）
+        _ = CheckBepInExAsync();
     }
 
     /// <summary>根据配置选择 SukiSideMenu 默认项，先取消所有项选中</summary>
@@ -145,7 +156,7 @@ public partial class MainWindow : SukiWindow
             // 延迟一点让对话框管理器就绪
             await Task.Delay(500);
 
-            DialogManager.CreateDialog()
+            await DialogManager.CreateDialog()
                 .WithTitle("发现新版本")
                 .WithContent($"Chip Launcher v{version} 已发布，是否前往下载？")
                 .WithActionButton("稍后再说", _ => { }, true)
@@ -160,7 +171,7 @@ public partial class MainWindow : SukiWindow
                         Logger.Error($"打开下载页失败: {ex.Message}");
                     }
                 }, true, "Flat", "Accent")
-                .TryShow();
+                .TryShowAsync();
         }
         catch (Exception ex)
         {
@@ -171,12 +182,21 @@ public partial class MainWindow : SukiWindow
     private void OnWindowDragEnter(object? sender, DragEventArgs e)
     {
         if (!HasCompatibleFile(e)) return;
+        // SukiUI Dialog 在 SukiWindow.Hosts 层（高于主 Grid），对话框可见时不显示拖放遮罩
+        if (_isBepInExDialogActive) return;
         e.DragEffects = DragDropEffects.Copy;
 
 #pragma warning disable CS0618
         var files = e.Data.GetFiles()?.ToList();
 #pragma warning restore CS0618
         if (files == null || files.Count == 0) return;
+
+        // 检查是否有 BepInEx 压缩包
+        var isBepInEx = files.Any(f =>
+        {
+            var path = f.Path?.LocalPath;
+            return path != null && IsBepInExFileName(path);
+        });
 
         if (files.Count == 1)
         {
@@ -191,6 +211,9 @@ public partial class MainWindow : SukiWindow
                 : $"📄 共 {files.Count} 个文件";
         }
 
+        WindowDropOverlayTitle.Text = isBepInEx
+            ? "⚡ 释放以安装 BepInEx"
+            : "📦 释放以安装模组";
         WindowDropOverlay.IsVisible = true;
     }
 
@@ -217,11 +240,31 @@ public partial class MainWindow : SukiWindow
 
         if (paths.Count == 0) return;
 
+        // 检查是否包含 BepInEx 压缩包
+        var bepInExPaths = paths.Where(IsBepInExFileName).ToList();
+        if (bepInExPaths.Count > 0)
+        {
+            // 安装第一个 BepInEx 压缩包
+            await InstallBepInExFromFileAsync(bepInExPaths[0]);
+            return;
+        }
+
         SideMenuMods.IsSelected = true;
         await Task.Delay(100);
 
         if (SideMenuMods.PageContent is ModsPage modsPage)
             await modsPage.InstallFilesAsync(paths);
+    }
+
+    /// <summary>根据文件名判断是否为 BepInEx 压缩包</summary>
+    private static bool IsBepInExFileName(string filePath)
+    {
+        var fileName = Path.GetFileName(filePath);
+        if (string.IsNullOrEmpty(fileName)) return false;
+        return fileName.StartsWith("BepInEx", StringComparison.OrdinalIgnoreCase) &&
+               (fileName.EndsWith(".zip", StringComparison.OrdinalIgnoreCase) ||
+                fileName.EndsWith(".7z", StringComparison.OrdinalIgnoreCase) ||
+                fileName.EndsWith(".rar", StringComparison.OrdinalIgnoreCase));
     }
 
     private static bool HasCompatibleFile(DragEventArgs e)
@@ -272,17 +315,173 @@ public partial class MainWindow : SukiWindow
         }
     }
 
-    private void CheckBepInExStatus()
+    /// <summary>点击 BepInEx 警告按钮时打开安装对话框</summary>
+    private void OnBepInExWarningClick(object? sender, RoutedEventArgs e)
+    {
+        _ = CheckBepInExAsync();
+    }
+
+    /// <summary>检查 BepInEx 状态，未安装时弹窗并提供下载/选择文件功能</summary>
+    private async Task CheckBepInExAsync()
     {
         if (GameLocalization.IsBepInExInstalled())
         {
             Logger.Info("BepInEx 已安装");
             BepInExWarning.IsVisible = false;
+            return;
+        }
+
+        Logger.Warn("BepInEx 未安装 — 模组管理功能不可用");
+        BepInExWarning.IsVisible = true;
+        WindowDropOverlay.IsVisible = false;
+
+        // 使用原生 SukiUI Dialog，从按钮回调中捕获 ISukiDialog 引用以便安装后关闭
+        _isBepInExDialogActive = true;
+        await DialogManager.CreateDialog()
+            .WithTitle("BepInEx 未安装")
+            .WithContent("BepInEx 是游戏模组加载框架，未安装时模组管理功能不可用。\n\n" +
+                         "你可以：\n" +
+                         "① 点击「前往下载」从 GitHub 获取 BepInEx\n" +
+                         "② 点击「选择文件」选择本地 BepInEx 压缩包\n" +
+                         "③ 或将 BepInEx 压缩包直接拖入窗口自动安装")
+            .WithActionButton("关闭", dialog => _bepInExDialog = dialog, true)
+            .WithActionButton("选择文件", dialog =>
+            {
+                _bepInExDialog = dialog;
+                _ = PickAndInstallBepInExAsync();
+            }, true, "Flat", "Accent")
+            .WithActionButton("前往下载", dialog =>
+            {
+                _bepInExDialog = dialog;
+                Process.Start(new ProcessStartInfo
+                {
+                    FileName = "https://github.com/BepInEx/BepInEx/releases/latest",
+                    UseShellExecute = true
+                });
+            }, true, "Flat", "Accent")
+            .TryShowAsync();
+        _isBepInExDialogActive = false;
+    }
+
+    /// <summary>打开文件选择器，安装用户选择的 BepInEx 压缩包</summary>
+    private async Task PickAndInstallBepInExAsync()
+    {
+        try
+        {
+            var files = await StorageProvider.OpenFilePickerAsync(new FilePickerOpenOptions
+            {
+                Title = "选择 BepInEx 压缩包",
+                AllowMultiple = false,
+                FileTypeFilter =
+                [
+                    new FilePickerFileType("BepInEx 压缩包")
+                    {
+                        Patterns = ["*.zip", "*.7z", "*.rar"]
+                    }
+                ]
+            });
+
+            if (files.Count == 0) return;
+
+            await InstallBepInExFromFileAsync(files[0].Path.LocalPath);
+        }
+        catch (Exception ex)
+        {
+            Logger.Error("安装 BepInEx 失败", ex);
+            await DialogManager.CreateDialog()
+                .WithTitle("安装失败")
+                .WithContent($"安装 BepInEx 时出错：{ex.Message}")
+                .WithActionButton("知道了", _ => { }, true)
+                .TryShowAsync();
+        }
+    }
+
+    /// <summary>直接从文件路径安装 BepInEx（验证 + 解压）</summary>
+    private async Task InstallBepInExFromFileAsync(string filePath)
+    {
+        WindowDropOverlay.IsVisible = false;
+
+        // 检查是否为有效的 BepInEx 压缩包（需包含 .doorstop_version + BepInEx/ + winhttp.dll）
+        bool isBepInEx;
+        try
+        {
+            using var stream = File.OpenRead(filePath);
+            using var archive = SharpCompress.Archives.ArchiveFactory.OpenArchive(stream,
+                new SharpCompress.Readers.ReaderOptions());
+            var entries = archive.Entries.Select(e => e.Key?.Replace('\\', '/') ?? "").ToHashSet();
+            isBepInEx = entries.Any(k => k.Equals(".doorstop_version", StringComparison.OrdinalIgnoreCase)) &&
+                        entries.Any(k => k.StartsWith("BepInEx/", StringComparison.OrdinalIgnoreCase)) &&
+                        entries.Any(k => k.Equals("winhttp.dll", StringComparison.OrdinalIgnoreCase));
+        }
+        catch
+        {
+            isBepInEx = false;
+        }
+
+        if (!isBepInEx)
+        {
+            await DialogManager.CreateDialog()
+                .WithTitle("文件格式错误")
+                .WithContent("所选文件不是有效的 BepInEx 压缩包（未找到 .doorstop_version、BepInEx/ 目录或 winhttp.dll）。\n\n" +
+                             "请从 GitHub 下载正确的 BepInEx 版本。")
+                .WithActionButton("知道了", _ => { }, true)
+                .TryShowAsync();
+            return;
+        }
+
+        // 解压到游戏目录
+        var gameDir = GameLocalization.GetGameDirectory();
+        if (string.IsNullOrEmpty(gameDir))
+        {
+            await DialogManager.CreateDialog()
+                .WithTitle("无法安装")
+                .WithContent("未找到游戏安装目录，请先在设置中配置游戏路径。")
+                .WithActionButton("知道了", _ => { }, true)
+                .TryShowAsync();
+            return;
+        }
+
+        // 后台解压
+        await Task.Run(() =>
+        {
+            using var stream = File.OpenRead(filePath);
+            using var archive = SharpCompress.Archives.ArchiveFactory.OpenArchive(stream,
+                new SharpCompress.Readers.ReaderOptions());
+            var archiveDir = archive.Entries.First().Key?.Replace('\\', '/') ?? "";
+            var baseDir = archiveDir.Contains('/')
+                ? archiveDir[..archiveDir.IndexOf('/')]
+                : "";
+
+            foreach (var entry in archive.Entries)
+            {
+                if (entry.IsDirectory) continue;
+                var relPath = entry.Key?.Replace('\\', '/') ?? "";
+                if (!string.IsNullOrEmpty(baseDir) && relPath.StartsWith(baseDir + "/"))
+                    relPath = relPath[(baseDir.Length + 1)..];
+
+                var destPath = Path.Combine(gameDir, relPath);
+                var destDir = Path.GetDirectoryName(destPath);
+                if (destDir != null) Directory.CreateDirectory(destDir);
+                entry.WriteToFile(destPath, new SharpCompress.Common.ExtractionOptions
+                    { ExtractFullPath = true, Overwrite = true });
+            }
+        });
+
+        // 重新检查状态
+        if (GameLocalization.IsBepInExInstalled())
+        {
+            // 关闭 BepInEx 未安装提示对话框（已通过按钮回调捕获引用）
+            if (_bepInExDialog != null)
+            {
+                DialogManager.TryDismissDialog(_bepInExDialog);
+                _bepInExDialog = null;
+            }
+            BepInExWarning.IsVisible = false;
+            AppNotification.Show("BepInEx 安装成功！", NotificationType.Success);
         }
         else
         {
-            Logger.Warn("BepInEx 未安装 — 模组管理功能不可用");
-            BepInExWarning.IsVisible = true;
+            AppNotification.Show("BepInEx 安装失败，请检查文件是否正确", NotificationType.Error);
         }
     }
 
