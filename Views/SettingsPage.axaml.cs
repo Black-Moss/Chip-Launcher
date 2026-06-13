@@ -21,6 +21,14 @@ public partial class SettingsPage : UserControl
         // 启动页面 ComboBox 下拉关闭后，确保设置页侧边栏项仍然选中
         // （防止 SukiSideMenu 在下拉交互中误触其他菜单项）
         StartupPageCombo.DropDownClosed += OnStartupPageComboDropDownClosed;
+
+        // 游戏路径输入框：若用户未手动设置路径但 Steam 自动检测到游戏，显示淡色占位文本
+        if (string.IsNullOrEmpty(AppConfig.Instance.GamePath))
+        {
+            var detectedDir = GameLocalization.GetGameDirectory();
+            if (!string.IsNullOrEmpty(detectedDir))
+                GamePathTextBox.Watermark = detectedDir;
+        }
     }
 
     /// <summary>搜索框文本变化 → 筛选显示匹配的设置项</summary>
