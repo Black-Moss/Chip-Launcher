@@ -1,0 +1,353 @@
+<UserControl xmlns="https://github.com/avaloniaui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:local="using:ChipLauncher.Views"
+             x:Class="ChipLauncher.Views.SkinPage">
+    <Grid Margin="15" ColumnDefinitions="320,5,*">
+
+        <!-- ══════ 左侧：皮肤列表 ══════ -->
+        <Grid RowDefinitions="Auto,Auto,Auto,Auto,*">
+
+            <TextBlock Text="皮肤管理"
+                       Classes="PageTitle" />
+
+            <!-- 搜索框（按 Enter → 跳转皮肤下载页搜索） -->
+            <TextBox Name="SkinSearchBox"
+                     Grid.Row="1"
+                     Watermark="搜索本地皮肤…"
+                     FontSize="13"
+                     Padding="8,5"
+                     Margin="0,0,0,6"
+                     Background="#1a1a1a"
+                     Foreground="{StaticResource TextPrimaryBrush}"
+                     BorderBrush="{StaticResource BorderBrush}"
+                     BorderThickness="1"
+                     TextChanged="OnSkinSearchChanged"
+                     KeyDown="OnSkinSearchKeyDown" />
+
+            <!-- 工具按钮行：安装 + 文件夹 + 排序 -->
+            <StackPanel Grid.Row="2" Orientation="Horizontal" Spacing="6" Margin="0,0,0,6" HorizontalAlignment="Center">
+                <Button Classes="Flat" Name="BtnInstallLocalSkin"
+                        Content="安装本地皮肤"
+                        Padding="10,5"
+                        FontSize="11"
+                        Click="OnInstallLocalSkinClick" />
+                <Button Classes="Flat" Name="BtnOpenSkinFolder"
+                        Content="皮肤文件夹"
+                        Padding="10,5"
+                        FontSize="11"
+                        Click="OnOpenSkinFolderToolbarClick" />
+                <Button Classes="Flat" Name="BtnSortOrder"
+                        Content="A-Z ▾"
+                        Padding="8,5"
+                        FontSize="11"
+                        Click="OnSortOrderClick" />
+            </StackPanel>
+
+            <!-- 皮肤统计 + 批量操作工具栏 -->
+            <StackPanel Grid.Row="3" Margin="0,0,0,6" Spacing="4">
+                <TextBlock Name="SkinStatsText"
+                           FontSize="12"
+                           Foreground="#888" />
+                <StackPanel Name="BatchToolbar"
+                            Orientation="Horizontal"
+                            Spacing="6"
+                            IsVisible="False">
+                    <Button Classes="Flat" Name="BtnBatchSelectAll"
+                            Content="全选"
+                            Padding="8,4"
+                            FontSize="11"
+                            Click="OnBatchSelectAllClick" />
+                    <Button Classes="Flat" Name="BtnBatchInvert"
+                            Content="反选"
+                            Padding="8,4"
+                            FontSize="11"
+                            Click="OnBatchInvertClick" />
+                    <Button Classes="Flat" Name="BtnBatchDelete"
+                            Content="删除选中"
+                            Padding="8,4"
+                            FontSize="11"
+                            Click="OnBatchDeleteClick" />
+                </StackPanel>
+            </StackPanel>
+
+            <!-- 皮肤列表 -->
+            <ListBox Name="SkinListBox"
+                     Grid.Row="4"
+                     Background="Transparent"
+                     BorderThickness="0"
+                     ScrollViewer.HorizontalScrollBarVisibility="Disabled"
+                     ScrollViewer.VerticalScrollBarVisibility="Auto"
+                     SelectionChanged="OnSkinSelected">
+                <ListBox.ItemTemplate>
+                    <DataTemplate>
+                        <Border Padding="6,8"
+                                Margin="0,0,0,3"
+                                BorderBrush="{StaticResource BorderBrush}"
+                                BorderThickness="0,0,0,1">
+                            <Grid ColumnDefinitions="Auto,Auto,Auto,*,Auto">
+
+                                <!-- 选择复选框（双向绑定到 SkinDownloadItem.IsChecked，同 ModsPage） -->
+                                <CheckBox Tag="{Binding}"
+                                          IsChecked="{Binding IsChecked}"
+                                          IsHitTestVisible="True"
+                                          VerticalAlignment="Center"
+                                          Margin="0,0,4,0"
+                                          Click="OnSkinCheckBoxClick" />
+
+                                <!-- 启用状态圆点 -->
+                                <Ellipse Grid.Column="1" Width="8" Height="8"
+                                         Fill="{Binding Id, Converter={x:Static local:SkinPage.EnabledColorConverter}}"
+                                         VerticalAlignment="Center"
+                                         Margin="0,0,8,0" />
+
+                                <!-- 缩略图 -->
+                                <Border Grid.Column="2" Width="36" Height="36"
+                                        CornerRadius="4"
+                                        Background="#333"
+                                        BorderBrush="#555"
+                                        BorderThickness="1"
+                                        VerticalAlignment="Center">
+                                    <Image Source="{Binding ThumbnailImage}"
+                                           Width="36" Height="36"
+                                           Stretch="UniformToFill" />
+                                </Border>
+
+                                <!-- 皮肤名称 + 大小 -->
+                                <StackPanel Grid.Column="3"
+                                            VerticalAlignment="Center"
+                                            Margin="8,0,0,0">
+                                    <TextBlock Text="{Binding Name}"
+                                               FontSize="14"
+                                               Foreground="{StaticResource TextPrimaryBrush}"
+                                               TextWrapping="NoWrap"
+                                               TextTrimming="CharacterEllipsis" />
+                                    <TextBlock Text="{Binding SizeDisplay}"
+                                               FontSize="10"
+                                               Foreground="#666" />
+                                </StackPanel>
+
+                                <!-- 切换按钮（同 ModsPage：背景色随启用状态变化） -->
+                                <Button Classes="Flat"
+                                        Grid.Column="4"
+                                        Content="{Binding Id, Converter={x:Static local:SkinPage.ToggleTextConverter}}"
+                                        Background="{Binding Id, Converter={x:Static local:SkinPage.ToggleColorConverter}}"
+                                        Padding="8,4"
+                                        FontSize="11"
+                                        MinWidth="48"
+                                        Tag="{Binding}"
+                                        Click="OnToggleClick"
+                                        HorizontalAlignment="Right" />
+                            </Grid>
+                        </Border>
+                    </DataTemplate>
+                </ListBox.ItemTemplate>
+            </ListBox>
+
+            <TextBlock Name="EmptyHint"
+                       Grid.Row="4"
+                       Text="未检测到本地皮肤&#x0a;请先在「皮肤下载」页面下载皮肤"
+                       FontSize="13"
+                       Foreground="#888"
+                       VerticalAlignment="Center"
+                       HorizontalAlignment="Center"
+                       TextWrapping="Wrap"
+                       IsVisible="True" />
+        </Grid>
+
+        <!-- ══════ 分隔线 ══════ -->
+        <Border Grid.Column="1"
+                BorderBrush="{StaticResource BorderBrush}"
+                BorderThickness="0,0,1,0" />
+
+        <!-- ══════ 右侧：皮肤详情 ══════ -->
+        <Grid Grid.Column="2"
+              Margin="10,0,0,0"
+              RowDefinitions="Auto,Auto,Auto,Auto,*"
+              IsVisible="False"
+              Name="DetailPanel">
+
+            <TextBlock Name="DetailName"
+                       FontSize="18"
+                       FontWeight="Bold"
+                       Foreground="{StaticResource TextPrimaryBrush}" />
+
+            <!-- 操作按钮 -->
+            <StackPanel Grid.Row="1" Orientation="Horizontal" Spacing="10" Margin="0,8,0,8">
+                <Button Classes="Flat"
+                        Name="BtnOpenSkinFolderDetail"
+                        Content="打开文件夹"
+                        Padding="12,7"
+                        FontSize="13"
+                        Click="OnOpenSkinFolderClick" />
+                <Button Classes="Flat"
+                        Name="BtnOpenSkinDownload"
+                        Content="前往下载页"
+                        Padding="12,7"
+                        FontSize="13"
+                        Click="OnOpenSkinDownloadClick" />
+                <Button Classes="Flat"
+                        Name="BtnDeleteSkin"
+                        Content="删除皮肤"
+                        Padding="12,7"
+                        FontSize="13"
+                        Click="OnDeleteSkinClick" />
+            </StackPanel>
+
+            <!-- 删除确认面板（与模组管理页同步） -->
+            <Border Name="DeleteConfirmPanel"
+                    Grid.Row="2"
+                    BorderBrush="#e74c3c"
+                    BorderThickness="1"
+                    CornerRadius="6"
+                    Background="#1a0000"
+                    Padding="15,12"
+                    Margin="0,0,0,8"
+                    IsVisible="False"
+                    VerticalAlignment="Top">
+                <StackPanel Spacing="10">
+                    <TextBlock Name="DeleteConfirmText"
+                               FontSize="14"
+                               Foreground="#e74c3c"
+                               TextWrapping="Wrap" />
+                    <StackPanel Orientation="Horizontal" Spacing="10">
+                        <Button Classes="Flat" Name="BtnConfirmDelete"
+                                Content="✔ 确认删除"
+                                Padding="15,8"
+                                FontSize="13"
+                                Click="OnConfirmDeleteClick" />
+                        <Button Classes="Flat" Name="BtnCancelDelete"
+                                Content="✖ 取消"
+                                Padding="15,8"
+                                FontSize="13"
+                                Click="OnCancelDeleteClick" />
+                    </StackPanel>
+                </StackPanel>
+            </Border>
+
+            <!-- 缩略图大图 -->
+            <Border Grid.Row="3"
+                    CornerRadius="6"
+                    Background="#222"
+                    BorderBrush="{StaticResource BorderBrush}"
+                    BorderThickness="1"
+                    Height="200"
+                    HorizontalAlignment="Stretch"
+                    Margin="0,0,0,8">
+                <Image Name="DetailPreview"
+                       Stretch="Uniform"
+                       Margin="4" />
+            </Border>
+
+            <!-- 详情内容 -->
+            <ScrollViewer Grid.Row="4"
+                          VerticalScrollBarVisibility="Auto">
+                <StackPanel Spacing="12">
+
+                    <!-- 元数据 -->
+                    <StackPanel Spacing="4">
+                        <Grid ColumnDefinitions="Auto,*">
+                            <TextBlock Text="作者："
+                                       FontSize="12" Foreground="#888" />
+                            <TextBlock Grid.Column="1"
+                                       Margin="6,0,0,0"
+                                       Name="DetailAuthor"
+                                       FontSize="12" Foreground="#aaa" />
+                        </Grid>
+                        <Grid ColumnDefinitions="Auto,*">
+                            <TextBlock Text="文件大小："
+                                       FontSize="12" Foreground="#888" />
+                            <TextBlock Grid.Column="1"
+                                       Margin="6,0,0,0"
+                                       Name="DetailSize"
+                                       FontSize="12" Foreground="#aaa" />
+                        </Grid>
+                        <Grid ColumnDefinitions="Auto,*">
+                            <TextBlock Text="下载量："
+                                       FontSize="12" Foreground="#888" />
+                            <TextBlock Grid.Column="1"
+                                       Margin="6,0,0,0"
+                                       Name="DetailDownloads"
+                                       FontSize="12" Foreground="#aaa" />
+                        </Grid>
+                    </StackPanel>
+
+                    <!-- 分隔 -->
+                    <Border BorderBrush="{StaticResource BorderBrush}"
+                            BorderThickness="0,0,0,1"
+                            Margin="0,4" />
+
+                    <!-- 描述 -->
+                    <TextBlock Name="DetailDescription"
+                               FontSize="13"
+                               Foreground="#aaa"
+                               TextWrapping="Wrap" />
+
+                    <!-- 分隔 -->
+                    <Border BorderBrush="{StaticResource BorderBrush}"
+                            BorderThickness="0,0,0,1"
+                            Margin="0,4" />
+
+                    <!-- "启动游戏时使用此皮肤" 启用按钮 -->
+                    <Grid ColumnDefinitions="*,Auto">
+                        <StackPanel VerticalAlignment="Center">
+                            <TextBlock Text="启动游戏时使用此皮肤"
+                                       FontSize="14"
+                                       Foreground="{StaticResource TextPrimaryBrush}" />
+                            <TextBlock Name="EnableStatusText"
+                                       FontSize="11"
+                                       Foreground="#e67e22"
+                                       IsVisible="False" />
+                        </StackPanel>
+                        <Button Classes="Flat"
+                                Name="BtnEnableSkin"
+                                Grid.Column="1"
+                                Content="使用该皮肤"
+                                Padding="15,8"
+                                FontSize="13"
+                                MinWidth="100"
+                                Click="OnEnableSkinClick" />
+                    </Grid>
+                </StackPanel>
+            </ScrollViewer>
+        </Grid>
+
+        <!-- 未选择皮肤时的提示 -->
+        <TextBlock Name="NoSelectionHint"
+                   Grid.Column="2"
+                   Text="选择一个本地皮肤查看详情"
+                   FontSize="14"
+                   Foreground="#888"
+                   VerticalAlignment="Center"
+                   HorizontalAlignment="Center"
+                   IsVisible="True" />
+
+        <!-- ══════ 安装中加载遮罩（同 ModsPage） ══════ -->
+        <Border Name="InstallOverlay"
+                Grid.ColumnSpan="3"
+                Background="#88000000"
+                IsVisible="False"
+                ZIndex="100">
+            <Border Background="#2a2a2a"
+                    BorderBrush="{StaticResource BorderBrush}"
+                    BorderThickness="1"
+                    CornerRadius="8"
+                    Padding="40,30"
+                    Width="280"
+                    Height="120"
+                    VerticalAlignment="Center"
+                    HorizontalAlignment="Center">
+                <StackPanel Spacing="16" VerticalAlignment="Center">
+                    <ProgressBar IsIndeterminate="True"
+                                 Height="6"
+                                 Foreground="#e67e22"
+                                 Background="#444"
+                                 BorderThickness="0" />
+                    <TextBlock Text="正在安装皮肤…"
+                               FontSize="15"
+                               Foreground="#cccccc"
+                               HorizontalAlignment="Center" />
+                </StackPanel>
+            </Border>
+        </Border>
+    </Grid>
+</UserControl>

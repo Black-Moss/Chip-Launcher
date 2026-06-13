@@ -18,6 +18,8 @@ public class AppConfig : INotifyPropertyChanged
     private static readonly TimeSpan SaveDebounce = TimeSpan.FromMilliseconds(500);
     private bool _autoCheckUpdates = true;
     private bool _confirmModDeletion = true;
+    private bool _infiniteScroll;
+    private int _enabledSkinId = -1;
 
     private string _defaultPage = "News";
 
@@ -128,6 +130,33 @@ public class AppConfig : INotifyPropertyChanged
             Save();
         }
     }
+
+    /// <summary>皮肤下载页是否启用无底滚动（自动加载下一页）</summary>
+    public bool InfiniteScroll
+    {
+        get => _infiniteScroll;
+        set
+        {
+            if (_infiniteScroll == value) return;
+            _infiniteScroll = value;
+            OnPropertyChanged();
+            Save();
+        }
+    }
+
+    /// <summary>启用的皮肤 ID（-1 表示未启用任何皮肤），单选</summary>
+    public int EnabledSkinId
+    {
+        get => _enabledSkinId;
+        set
+        {
+            if (_enabledSkinId == value) return;
+            _enabledSkinId = value;
+            OnPropertyChanged();
+            Save();
+        }
+    }
+
 
     /// <summary>启动时是否自动检查更新</summary>
     public bool AutoCheckUpdates

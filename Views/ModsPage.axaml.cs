@@ -159,19 +159,19 @@ public partial class ModsPage : UserControl
 
                 var disabledFiles = Directory.GetFiles(dir, "*.disabled");
                 if (disabledFiles.Length <= 0) continue;
-                {
-                    var dllPath = disabledFiles[0].Replace(".disabled", "");
-                    if (!File.Exists(dllPath)) continue;
 
-                    var (guid, name, _) = ModInstaller.GetBepInPluginInfo(dllPath);
-                    if (string.IsNullOrEmpty(guid)) continue;
+                {
+                    // .disabled 文件本质就是重命名的 DLL，可直接读取元数据
+                    var disabledPath = disabledFiles[0];
+                    var (dGuid, dName, _) = ModInstaller.GetBepInPluginInfo(disabledPath);
+                    if (string.IsNullOrEmpty(dGuid)) continue;
 
                     mods.Add(new ModInfo
                     {
-                        Name = name ?? Path.GetFileName(dir),
-                        Guid = guid,
+                        Name = dName ?? Path.GetFileName(dir),
+                        Guid = dGuid,
                         DirectoryPath = dir,
-                        PluginFilePath = disabledFiles[0]
+                        PluginFilePath = disabledPath
                     });
                 }
             }

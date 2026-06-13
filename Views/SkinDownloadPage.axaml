@@ -1,0 +1,492 @@
+<UserControl xmlns="https://github.com/avaloniaui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:local="using:ChipLauncher.Views"
+             x:Class="ChipLauncher.Views.SkinDownloadPage">
+    <Grid Margin="15" RowDefinitions="Auto,Auto,Auto,*">
+
+        <!-- ══════ 标题 ══════ -->
+        <TextBlock Text="皮肤下载"
+                   Classes="PageTitle" />
+
+        <!-- ══════ 顶部工具栏：搜索 + 排序 + 分类 + 显示模式 ══════ -->
+        <Border Grid.Row="1"
+                Background="#1a1a1a"
+                BorderBrush="{StaticResource BorderBrush}"
+                BorderThickness="1"
+                CornerRadius="8"
+                Padding="10,8"
+                Margin="0,10,0,6">
+            <StackPanel Orientation="Horizontal" Spacing="10">
+                <!-- 搜索框 -->
+                <Border Background="#222"
+                        BorderBrush="{StaticResource BorderBrush}"
+                        BorderThickness="1"
+                        CornerRadius="5"
+                        Padding="6,3"
+                        Width="200">
+                    <Grid ColumnDefinitions="*,Auto">
+                        <TextBox Name="SearchTextBox"
+                                 Background="Transparent"
+                                 BorderThickness="0"
+                                 Watermark="搜索皮肤 / 作者..."
+                                 FontSize="13"
+                                 Padding="4,2"
+                                 TextChanged="OnSearchTextChanged"
+                                 KeyDown="OnSearchKeyDown" />
+                    </Grid>
+                </Border>
+
+                <!-- 分隔线 -->
+                <Border Width="1"
+                        Background="{StaticResource BorderBrush}"
+                        VerticalAlignment="Stretch" />
+
+                <!-- 排序 -->
+                <StackPanel Orientation="Horizontal" Spacing="4"
+                            VerticalAlignment="Center">
+                    <TextBlock Text="排序"
+                               FontSize="12"
+                               Foreground="#888"
+                               VerticalAlignment="Center" />
+                    <ComboBox Name="SortComboBox"
+                              Background="#222"
+                              BorderBrush="{StaticResource BorderBrush}"
+                              FontSize="12"
+                              Width="90"
+                              SelectedIndex="3"
+                              SelectionChanged="OnSortSelectionChanged">
+                        <ComboBox.Items>
+                            <ComboBoxItem>A-Z</ComboBoxItem>
+                            <ComboBoxItem>Z-A</ComboBoxItem>
+                            <ComboBoxItem>ID</ComboBoxItem>
+                            <ComboBoxItem>下载量</ComboBoxItem>
+                            <ComboBoxItem>大小</ComboBoxItem>
+                        </ComboBox.Items>
+                    </ComboBox>
+                </StackPanel>
+
+                <!-- 分隔线 -->
+                <Border Width="1"
+                        Background="{StaticResource BorderBrush}"
+                        VerticalAlignment="Stretch" />
+
+                <!-- 分类过滤 -->
+                <StackPanel Orientation="Horizontal" Spacing="4"
+                            VerticalAlignment="Center">
+                    <TextBlock Text="分类"
+                               FontSize="12"
+                               Foreground="#888"
+                               VerticalAlignment="Center" />
+                    <ComboBox Name="CategoryFilterComboBox"
+                              Background="#222"
+                              BorderBrush="{StaticResource BorderBrush}"
+                              FontSize="12"
+                              Width="110"
+                              SelectionChanged="OnCategoryFilterChanged">
+                        <ComboBox.ItemTemplate>
+                            <DataTemplate>
+                                <TextBlock Text="{Binding Value}"
+                                           FontSize="12" />
+                            </DataTemplate>
+                        </ComboBox.ItemTemplate>
+                    </ComboBox>
+                </StackPanel>
+
+                <!-- 分隔线 -->
+                <Border Width="1"
+                        Background="{StaticResource BorderBrush}"
+                        VerticalAlignment="Stretch" />
+
+                <!-- 显示模式切换 -->
+                <StackPanel Orientation="Horizontal" Spacing="4"
+                            VerticalAlignment="Center">
+                    <TextBlock Text="显示"
+                               FontSize="12"
+                               Foreground="#888"
+                               VerticalAlignment="Center" />
+                    <Button Name="BtnWaterfallMode"
+                            Content="🌊 瀑布流"
+                            Classes="Flat Accent"
+                            FontSize="11"
+                            Padding="8,3"
+                            Click="OnToggleDisplayMode" />
+                    <Button Name="BtnListMode"
+                            Content="📋 列表"
+                            Classes="Flat"
+                            FontSize="11"
+                            Padding="8,3"
+                            Click="OnToggleDisplayMode" />
+                </StackPanel>
+
+                <!-- 分隔线 -->
+                <Border Width="1"
+                        Background="{StaticResource BorderBrush}"
+                        VerticalAlignment="Stretch" />
+
+                <!-- 刷新按钮 -->
+                <Button Content="刷新"
+                        Classes="Flat"
+                        FontSize="12"
+                        Padding="8,5"
+                        VerticalAlignment="Center"
+                        Click="OnRefreshClick" />
+
+                <!-- 在皮肤站上搜索 -->
+                <Button Content="在皮肤站上搜索"
+                        Classes="Flat Accent"
+                        FontSize="12"
+                        Padding="10,5"
+                        VerticalAlignment="Center"
+                        Click="OnSearchWebsiteClick" />
+
+                <!-- 弹性空间 -->
+                <Border HorizontalAlignment="Stretch" />
+
+                <!-- 加载指示器 -->
+                <TextBlock Name="LoadingIndicator"
+                           Text="加载中..."
+                           FontSize="12"
+                           Foreground="#0af"
+                           VerticalAlignment="Center"
+                           IsVisible="False" />
+
+                <!-- 统计信息 -->
+                <StackPanel Orientation="Horizontal" Spacing="12"
+                            VerticalAlignment="Center">
+                    <TextBlock Name="StatTotalSkins"
+                               Text="共 0 个皮肤"
+                               FontSize="12"
+                               Foreground="#aaa" />
+                    <TextBlock Name="StatLocalSkins"
+                               Text="本地：0"
+                               FontSize="12"
+                               Foreground="#aaa" />
+                </StackPanel>
+            </StackPanel>
+        </Border>
+
+        <!-- ══════ 分页栏（在工具栏和内容区之间）══════ -->
+        <Border Name="PaginationPanel"
+                Grid.Row="2"
+                Background="#1a1a1a"
+                BorderBrush="{StaticResource BorderBrush}"
+                BorderThickness="1"
+                CornerRadius="6"
+                Padding="8,4"
+                Margin="0,0,0,8"
+                IsVisible="False">
+            <StackPanel Orientation="Horizontal" Spacing="8"
+                        HorizontalAlignment="Center">
+                <Button Name="BtnPrevPage"
+                        Content="‹ 上一页"
+                        Classes="Flat"
+                        FontSize="11"
+                        Padding="8,2"
+                        Click="OnPrevPageClick" />
+                <TextBlock Name="PageInfoText"
+                           Text="1 / 1"
+                           FontSize="12"
+                           Foreground="#aaa"
+                           VerticalAlignment="Center"
+                           Margin="8,0" />
+                <Button Name="BtnNextPage"
+                        Content="下一页 ›"
+                        Classes="Flat"
+                        FontSize="11"
+                        Padding="8,2"
+                        Click="OnNextPageClick" />
+            </StackPanel>
+        </Border>
+
+        <!-- ══════ 下方内容区：皮肤列表 / 瀑布流 ══════ -->
+        <Grid Grid.Row="3">
+
+            <!-- 瀑布流模式 -->
+            <ScrollViewer Name="WaterfallScrollViewer"
+                          VerticalScrollBarVisibility="Auto"
+                          IsVisible="True"
+                          ScrollChanged="OnScrollChanged">
+                <ItemsControl Name="WaterfallItemsControl">
+                    <ItemsControl.ItemsPanel>
+                        <ItemsPanelTemplate>
+                            <WrapPanel Orientation="Horizontal"
+                                       HorizontalAlignment="Left" />
+                        </ItemsPanelTemplate>
+                    </ItemsControl.ItemsPanel>
+                    <ItemsControl.ItemTemplate>
+                        <DataTemplate>
+                            <Border Width="200"
+                                    Margin="0,0,12,12"
+                                    Padding="0"
+                                    CornerRadius="8"
+                                    Background="#1a1a1a"
+                                    BorderBrush="{StaticResource BorderBrush}"
+                                    BorderThickness="1">
+                                <StackPanel>
+                                    <!-- 缩略图（正方形）点击放大预览 -->
+                                    <Border Width="200"
+                                            Height="200"
+                                            CornerRadius="8,8,0,0"
+                                            Background="#222"
+                                            BorderThickness="0">
+                                        <Image Source="{Binding ThumbnailImage}"
+                                               Stretch="UniformToFill"
+                                               Width="200"
+                                               Height="200"
+                                               Cursor="Hand"
+                                               PointerPressed="OnThumbnailClick" />
+                                    </Border>
+                                    <!-- 信息 -->
+                                    <StackPanel Spacing="4" Margin="10,8,10,10">
+                                        <TextBlock Text="{Binding Name}"
+                                                   FontSize="14"
+                                                   FontWeight="Bold"
+                                                   Foreground="{StaticResource TextPrimaryBrush}"
+                                                   TextWrapping="NoWrap"
+                                                   TextTrimming="CharacterEllipsis" />
+                                        <TextBlock Text="{Binding Author}"
+                                                   FontSize="11"
+                                                   Foreground="#888"
+                                                   TextWrapping="NoWrap"
+                                                   TextTrimming="CharacterEllipsis" />
+                                        <TextBlock Text="{Binding Category}"
+                                                   FontSize="10"
+                                                   Foreground="#666" />
+                                        <Grid ColumnDefinitions="*,Auto">
+                                            <TextBlock FontSize="11"
+                                                       Foreground="#666">
+                                                <Run Text="⬇ " />
+                                                <Run Text="{Binding DownloadsDisplay}" />
+                                            </TextBlock>
+                                            <TextBlock Grid.Column="1"
+                                                       FontSize="11"
+                                                       Foreground="#666"
+                                                       Text="{Binding SizeDisplay}" />
+                                        </Grid>
+                                        <TextBlock FontSize="10"
+                                                   Foreground="#555">
+                                            <Run Text="# " />
+                                            <Run Text="{Binding Id}" />
+                                        </TextBlock>
+
+                                        <!-- 操作按钮 + 下载进度 -->
+                                        <Border CornerRadius="4"
+                                                Padding="0"
+                                                Background="#2d2d2d"
+                                                Margin="0,4,0,0">
+                                            <Grid>
+                                                <!-- 按钮容器：非下载中时显示 -->
+                                                <Grid
+                                                    IsVisible="{Binding IsDownloading, Converter={x:Static local:SkinDownloadPage.BoolInvertConverter}}">
+                                                    <!-- 下载按钮：未下载时显示 -->
+                                                    <Button Content="⬇ 下载"
+                                                            Tag="{Binding}"
+                                                            Classes="Flat"
+                                                            FontSize="11"
+                                                            Padding="6,3"
+                                                            Click="OnDownloadSkinClick"
+                                                            IsVisible="{Binding IsDownloaded, Converter={x:Static local:SkinDownloadPage.BoolInvertConverter}}" />
+                                                    <!-- 使用按钮：已下载时显示，点击跳转到皮肤管理页 -->
+                                                    <Button Content="▶ 使用此皮肤"
+                                                            Tag="{Binding}"
+                                                            Classes="Flat"
+                                                            FontSize="11"
+                                                            Padding="6,3"
+                                                            Click="OnUseSkinClick"
+                                                            IsVisible="{Binding IsDownloaded}" />
+                                                </Grid>
+                                                <ProgressBar IsIndeterminate="True"
+                                                             Height="14"
+                                                             IsVisible="{Binding IsDownloading}" />
+                                            </Grid>
+                                        </Border>
+                                    </StackPanel>
+                                </StackPanel>
+                            </Border>
+                        </DataTemplate>
+                    </ItemsControl.ItemTemplate>
+                </ItemsControl>
+            </ScrollViewer>
+
+            <!-- 列表模式 -->
+            <ScrollViewer Name="ListScrollViewer"
+                          VerticalScrollBarVisibility="Auto"
+                          IsVisible="False"
+                          ScrollChanged="OnScrollChanged">
+                <ListBox Name="SkinListBox"
+                         Background="Transparent"
+                         BorderThickness="0">
+                    <ListBox.ItemTemplate>
+                        <DataTemplate>
+                            <Border Padding="8,6"
+                                    Margin="0,0,0,4"
+                                    CornerRadius="6"
+                                    Background="#1a1a1a"
+                                    BorderBrush="{StaticResource BorderBrush}"
+                                    BorderThickness="1">
+                                <Grid ColumnDefinitions="80,*,Auto,Auto" Height="60">
+                                    <!-- 缩略图 -->
+                                    <Border Width="64" Height="48"
+                                            CornerRadius="4"
+                                            Background="#222"
+                                            BorderBrush="#444"
+                                            BorderThickness="1"
+                                            VerticalAlignment="Center">
+                                        <Image Source="{Binding ThumbnailImage}"
+                                               Width="64" Height="48"
+                                               Stretch="UniformToFill" />
+                                    </Border>
+                                    <!-- 名称 / 作者 / 分类 -->
+                                    <StackPanel Grid.Column="1"
+                                                VerticalAlignment="Center"
+                                                Margin="10,0,0,0"
+                                                Spacing="2">
+                                        <TextBlock Text="{Binding Name}"
+                                                   FontSize="14"
+                                                   FontWeight="Bold"
+                                                   Foreground="{StaticResource TextPrimaryBrush}"
+                                                   TextWrapping="NoWrap"
+                                                   TextTrimming="CharacterEllipsis" />
+                                        <TextBlock Text="{Binding Author}"
+                                                   FontSize="11"
+                                                   Foreground="#888"
+                                                   TextWrapping="NoWrap"
+                                                   TextTrimming="CharacterEllipsis" />
+                                        <TextBlock Text="{Binding Category}"
+                                                   FontSize="10"
+                                                   Foreground="#666" />
+                                    </StackPanel>
+                                    <!-- 元数据 -->
+                                    <StackPanel Grid.Column="2"
+                                                VerticalAlignment="Center"
+                                                Margin="12,0,12,0"
+                                                Spacing="2">
+                                        <TextBlock FontSize="11" Foreground="#666">
+                                            <Run Text="⬇ " />
+                                            <Run Text="{Binding DownloadsDisplay}" />
+                                        </TextBlock>
+                                        <TextBlock Text="{Binding SizeDisplay}"
+                                                   FontSize="11"
+                                                   Foreground="#666" />
+                                        <TextBlock FontSize="10"
+                                                   Foreground="#555">
+                                            <Run Text="# " />
+                                            <Run Text="{Binding Id}" />
+                                        </TextBlock>
+                                    </StackPanel>
+                                    <!-- 下载按钮 / 使用按钮 + 进度条 -->
+                                    <Grid Grid.Column="3"
+                                          VerticalAlignment="Center">
+                                        <!-- 按钮容器：非下载中时显示 -->
+                                        <Grid
+                                            IsVisible="{Binding IsDownloading, Converter={x:Static local:SkinDownloadPage.BoolInvertConverter}}">
+                                            <!-- 下载按钮：未下载时显示 -->
+                                            <Button Content="下载"
+                                                    Tag="{Binding}"
+                                                    Classes="Flat Accent"
+                                                    FontSize="11"
+                                                    Padding="10,4"
+                                                    Click="OnDownloadSkinClick"
+                                                    IsVisible="{Binding IsDownloaded, Converter={x:Static local:SkinDownloadPage.BoolInvertConverter}}" />
+                                            <!-- 使用按钮：已下载时显示，点击跳转到皮肤管理页 -->
+                                            <Button Content="▶ 使用此皮肤"
+                                                    Tag="{Binding}"
+                                                    Classes="Flat Accent"
+                                                    FontSize="11"
+                                                    Padding="10,4"
+                                                    Click="OnUseSkinClick"
+                                                    IsVisible="{Binding IsDownloaded}" />
+                                        </Grid>
+                                        <ProgressBar IsIndeterminate="True"
+                                                     Height="16"
+                                                     IsVisible="{Binding IsDownloading}" />
+                                    </Grid>
+                                </Grid>
+                            </Border>
+                        </DataTemplate>
+                    </ListBox.ItemTemplate>
+                </ListBox>
+            </ScrollViewer>
+
+            <!-- 空状态提示 -->
+            <TextBlock Name="EmptyHint"
+                       Text="暂无皮肤数据&#x0a;正在从 https://skin.cat-bot.de/ 加载..."
+                       FontSize="14"
+                       Foreground="#888"
+                       VerticalAlignment="Center"
+                       HorizontalAlignment="Center"
+                       TextWrapping="Wrap"
+                       IsVisible="True" />
+
+            <!-- ══════ 缩略图预览遮罩（点击缩略图时显示）══════ -->
+            <Border Name="PreviewOverlay"
+                    Background="#CC000000"
+                    IsVisible="False"
+                    ZIndex="100"
+                    PointerPressed="OnPreviewOverlayClick">
+                <Grid VerticalAlignment="Center"
+                      HorizontalAlignment="Center">
+                    <!-- 内部卡片阻止事件冒泡到遮罩层 -->
+                    <Border CornerRadius="10"
+                            Background="#1a1a1a"
+                            BorderBrush="{StaticResource BorderBrush}"
+                            BorderThickness="1"
+                            Padding="12"
+                            PointerPressed="OnPreviewCardClick">
+                        <StackPanel Spacing="10">
+                            <!-- 顶部：皮肤名称 + 关闭按钮 -->
+                            <Grid ColumnDefinitions="*,Auto">
+                                <TextBlock Name="PreviewTitle"
+                                           FontSize="16"
+                                           FontWeight="Bold"
+                                           Foreground="{StaticResource TextPrimaryBrush}"
+                                           VerticalAlignment="Center"
+                                           TextTrimming="CharacterEllipsis" />
+                                <Button Grid.Column="1"
+                                        Content="✕"
+                                        Classes="Flat"
+                                        FontSize="14"
+                                        Padding="6,2"
+                                        Click="OnClosePreviewClick" />
+                            </Grid>
+
+                            <!-- 图片 -->
+                            <Border CornerRadius="6" ClipToBounds="True">
+                                <Image Name="PreviewImage"
+                                       MaxWidth="500"
+                                       MaxHeight="400"
+                                       Stretch="Uniform" />
+                            </Border>
+
+                            <!-- 底部：导航按钮 + 页码 -->
+                            <Grid ColumnDefinitions="Auto,*,Auto">
+                                <Button Name="BtnPrevImage"
+                                        Content="‹ 上一张"
+                                        Classes="Flat"
+                                        FontSize="12"
+                                        Padding="8,3"
+                                        IsVisible="False"
+                                        Click="OnPrevImageClick" />
+                                <TextBlock Grid.Column="1"
+                                           Name="PreviewPageText"
+                                           Text="1 / 1"
+                                           FontSize="12"
+                                           Foreground="#aaa"
+                                           HorizontalAlignment="Center"
+                                           VerticalAlignment="Center" />
+                                <Button Grid.Column="2"
+                                        Name="BtnNextImage"
+                                        Content="下一张 ›"
+                                        Classes="Flat"
+                                        FontSize="12"
+                                        Padding="8,3"
+                                        IsVisible="False"
+                                        Click="OnNextImageClick" />
+                            </Grid>
+                        </StackPanel>
+                    </Border>
+                </Grid>
+            </Border>
+        </Grid>
+    </Grid>
+</UserControl>

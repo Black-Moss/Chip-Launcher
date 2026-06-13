@@ -75,7 +75,10 @@ public partial class MainWindow : SukiWindow
                     toast = toast.WithTitle("警告");
                     break;
                 case NotificationType.Info:
+                    toast = toast.WithTitle("提示");
+                    break;
                 case NotificationType.Success:
+                    toast = toast.WithTitle("成功");
                     break;
                 default:
                     toast = toast.WithTitle("提示");
@@ -83,7 +86,7 @@ public partial class MainWindow : SukiWindow
             }
 
             toast.WithContent(message)
-                .Dismiss().After(TimeSpan.FromSeconds(4))
+                .Dismiss().After(TimeSpan.FromSeconds(5))
                 .Queue();
         };
 
@@ -123,10 +126,12 @@ public partial class MainWindow : SukiWindow
         _ = CheckBepInExAsync();
     }
 
-    private void SelectSideMenuItem(string page)
+    public void SelectSideMenuItem(string page)
     {
         // 先取消所有侧边栏项的选中状态，防止 SukiSideMenu 默认选中第一项
         SideMenuMods.IsSelected = false;
+        SideMenuSkin.IsSelected = false;
+        SideMenuSkinDownload.IsSelected = false;
         SideMenuNews.IsSelected = false;
         SideMenuSettings.IsSelected = false;
         SideMenuAbout.IsSelected = false;
@@ -134,6 +139,8 @@ public partial class MainWindow : SukiWindow
         var target = page switch
         {
             "Mods" => SideMenuMods,
+            "Skin" => SideMenuSkin,
+            "皮肤下载" => SideMenuSkinDownload,
             "News" => SideMenuNews,
             "Settings" => SideMenuSettings,
             _ => SideMenuAbout

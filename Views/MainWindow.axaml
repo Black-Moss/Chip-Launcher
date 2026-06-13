@@ -4,8 +4,8 @@
                  xmlns:local="clr-namespace:ChipLauncher.Views"
                  x:Class="ChipLauncher.Views.MainWindow"
                  Title="Chip Launcher"
-                 Height="650" Width="900"
-                 MinHeight="650" MinWidth="900"
+                 Height="650" Width="950"
+                 MinHeight="650" MinWidth="950"
                  WindowStartupLocation="CenterScreen"
                  BackgroundStyle="Flat"
                  TransparencyLevelHint="None"
@@ -79,6 +79,30 @@
                     </suki:SukiSideMenuItem.Icon>
                     <suki:SukiSideMenuItem.PageContent>
                         <local:ModsPage />
+                    </suki:SukiSideMenuItem.PageContent>
+                </suki:SukiSideMenuItem>
+                
+                <suki:SukiSideMenuItem Header="皮肤管理"
+                                       Classes="Compact"
+                                       x:Name="SideMenuSkin"
+                                       Foreground="#999999">
+                    <suki:SukiSideMenuItem.Icon>
+                        <TextBlock Text="👕" FontSize="20" />
+                    </suki:SukiSideMenuItem.Icon>
+                    <suki:SukiSideMenuItem.PageContent>
+                        <local:SkinPage />
+                    </suki:SukiSideMenuItem.PageContent>
+                </suki:SukiSideMenuItem>
+
+                <suki:SukiSideMenuItem Header="皮肤下载"
+                                       Classes="Compact"
+                                       x:Name="SideMenuSkinDownload"
+                                       Foreground="#999999">
+                    <suki:SukiSideMenuItem.Icon>
+                        <TextBlock Text="⬇" FontSize="20" />
+                    </suki:SukiSideMenuItem.Icon>
+                    <suki:SukiSideMenuItem.PageContent>
+                        <local:SkinDownloadPage />
                     </suki:SukiSideMenuItem.PageContent>
                 </suki:SukiSideMenuItem>
 
