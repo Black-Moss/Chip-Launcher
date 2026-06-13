@@ -214,6 +214,7 @@ public partial class MainWindow : SukiWindow
     }
 
     // ReSharper disable once UnusedMember.Local
+    // ReSharper disable once UnusedParameter.Local
     private void OnWindowDragLeave(object? _, RoutedEventArgs __)
     {
         WindowDropOverlay.IsVisible = false;

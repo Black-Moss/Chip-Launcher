@@ -20,18 +20,12 @@
         <suki:SukiDialogHost Name="DialogHost" />
     </suki:SukiWindow.Hosts>
 
-    <!-- 标题栏左侧：大标题 + 游戏文本 -->
-    <suki:SukiWindow.LogoContent>
+    <!-- 标题栏右侧：启动游戏按钮（SukiUI Flat 样式，始终可见） -->
+    <suki:SukiWindow.RightWindowTitleBarControls>
         <StackPanel Orientation="Horizontal"
                     VerticalAlignment="Center"
                     Spacing="12">
-            <TextBlock Text="Chip Launcher"
-                       FontSize="22"
-                       FontWeight="Bold"
-                       Foreground="White"
-                       VerticalAlignment="Center" />
-
-            <!-- 游戏信息 -->
+            <!-- 游戏信息文本 -->
             <ItemsControl Name="GameInfoPanel"
                           VerticalAlignment="Center"
                           IsVisible="False">
@@ -49,14 +43,6 @@
                     </DataTemplate>
                 </ItemsControl.ItemTemplate>
             </ItemsControl>
-        </StackPanel>
-    </suki:SukiWindow.LogoContent>
-
-    <!-- 标题栏右侧：启动游戏按钮（SukiUI Flat 样式，始终可见） -->
-    <suki:SukiWindow.RightWindowTitleBarControls>
-        <StackPanel Orientation="Horizontal"
-                    VerticalAlignment="Center"
-                    Spacing="12">
             <!-- BepInEx 警告（点击打开安装对话框） -->
             <Border Name="BepInExWarning"
                     Classes="Flat Accent"
