@@ -11,6 +11,7 @@ using Avalonia.Media.Imaging;
 using Avalonia.Platform.Storage;
 using ChipLauncher.Models;
 using ChipLauncher.Services;
+using SukiUI.Dialogs;
 
 namespace ChipLauncher.Views;
 
@@ -68,14 +69,52 @@ public partial class SkinPage : UserControl
     ///     OnAttachedToVisualTree 比 Loaded 事件更可靠，因为 SukiUI 可能不会在每次
     ///     标签切换时都触发 Loaded。
     /// </summary>
-    protected override void OnAttachedToVisualTree(VisualTreeAttachmentEventArgs e)
+    protected override async void OnAttachedToVisualTree(VisualTreeAttachmentEventArgs e)
     {
         base.OnAttachedToVisualTree(e);
-        LoadSkins();
+
+        // 检查 SkinSync 模组是否已安装
+        if (!SkinSyncService.IsWarningShownThisSession())
+            await CheckSkinSyncModAsync();
+
+        await LoadSkinsAsync();
     }
 
-    /// <summary>扫描本地皮肤并加载到列表</summary>
-    private void LoadSkins()
+    /// <summary>检查 SkinSync 模组，未安装时弹出提示对话框（每会话仅弹一次）。</summary>
+    private static async Task CheckSkinSyncModAsync()
+    {
+        if (SkinSyncService.IsSkinSyncModInstalled()) return;
+
+        SkinSyncService.MarkWarningShown();
+        Logger.Warn("SkinSync 模组未安装 — 皮肤系统不可用");
+
+        await MainWindow.DialogManager.CreateDialog()
+            .WithTitle("需要 SkinSync 模组")
+            .WithContent("皮肤系统依赖 SkinSync 模组才能正常工作。\n\n" +
+                         "SkinSync 是 BepInEx 插件，负责在游戏中加载自定义皮肤。\n" +
+                         "未安装时，皮肤管理功能不可用。\n\n" +
+                         "点击「前往下载」从 GitHub 获取最新版本。")
+            .WithActionButton("关闭", _ => { }, true)
+            .WithActionButton("前往下载", _ =>
+            {
+                try
+                {
+                    Process.Start(new ProcessStartInfo
+                    {
+                        FileName = "https://github.com/Bytechey/SkinSync/releases/latest",
+                        UseShellExecute = true
+                    });
+                }
+                catch (Exception ex)
+                {
+                    Logger.Error("打开 SkinSync 下载链接失败", ex);
+                }
+            }, true, "Flat", "Accent")
+            .TryShowAsync();
+    }
+
+    /// <summary>扫描本地皮肤并加载到列表（异步，含进度条）</summary>
+    private async Task LoadSkinsAsync()
     {
         // 空保护：XAML 控件可能未完全初始化
         if (SkinListBox == null) return;
@@ -108,8 +147,34 @@ public partial class SkinPage : UserControl
             _skinItems.Add(skin);
         }
 
+        // 将全部本地皮肤同步到游戏 CustomSprites 目录（带进度条）
+        await SyncSkinsWithProgressAsync();
+
         ApplySearchFilter();
         UpdateSkinStats();
+    }
+
+    /// <summary>同步皮肤到游戏目录，显示进度遮罩</summary>
+    private async Task SyncSkinsWithProgressAsync()
+    {
+        SyncOverlay.IsVisible = true;
+        SyncProgressBar.Value = 0;
+        SyncStatusText.Text = "正在扫描…";
+
+        try
+        {
+            var progress = new Progress<(int Current, int Total, string SkinName)>(state =>
+            {
+                SyncStatusText.Text = $"({state.Current}/{state.Total}) {state.SkinName}";
+                SyncProgressBar.Value = (double)state.Current / state.Total * 100;
+            });
+
+            await SkinSyncService.SyncAllToGameAsync(progress);
+        }
+        finally
+        {
+            SyncOverlay.IsVisible = false;
+        }
     }
 
     /// <summary>应用搜索过滤（同 ModsPage 模式）</summary>
@@ -197,7 +262,7 @@ public partial class SkinPage : UserControl
     /// <summary>刷新按钮 — 重新扫描本地皮肤</summary>
     private void OnRefreshLocalClick(object? sender, RoutedEventArgs e)
     {
-        LoadSkins();
+        _ = LoadSkinsAsync();
     }
 
     /// <summary>选中皮肤时更新详情面板</summary>
@@ -399,7 +464,7 @@ public partial class SkinPage : UserControl
         }
 
         InstallOverlay.IsVisible = false;
-        LoadSkins();
+        _ = LoadSkinsAsync();
 
         if (installed > 0 && failed == 0)
             AppNotification.Show($"已安装 {installed} 个皮肤", NotificationType.Success);
@@ -488,16 +553,17 @@ public partial class SkinPage : UserControl
 
         var currentEnabledId = AppConfig.Instance.EnabledSkinId;
 
-        // 如果点击的就是当前启用的皮肤 → 停用
+        // 如果点击的就是当前使用的皮肤 → 取消选择
         if (currentEnabledId == skin.Id)
         {
             AppConfig.Instance.EnabledSkinId = -1;
-            Logger.Info($"停用皮肤: {skin.Name} (#{skin.Id})");
+            Logger.Info($"取消选择皮肤: {skin.Name} (#{skin.Id})");
+            SkinSyncService.ClearCurrentSkin();
             RefreshAllStates();
             return;
         }
 
-        // 直接启用（无二次确认）
+        // 使用此皮肤
         ApplyEnableSkin(skin);
     }
 
@@ -509,24 +575,27 @@ public partial class SkinPage : UserControl
 
         var currentEnabledId = AppConfig.Instance.EnabledSkinId;
 
-        // 如果点击的是已启用的皮肤 → 停用
+        // 如果点击的就是当前使用的皮肤 → 取消选择
         if (currentEnabledId == skin.Id)
         {
             AppConfig.Instance.EnabledSkinId = -1;
-            Logger.Info($"停用皮肤: {skin.Name} (#{skin.Id})");
+            Logger.Info($"取消选择皮肤: {skin.Name} (#{skin.Id})");
+            SkinSyncService.ClearCurrentSkin();
             RefreshAllStates();
             return;
         }
 
-        // 直接启用（无二次确认）
+        // 使用此皮肤
         ApplyEnableSkin(skin);
     }
 
-    /// <summary>执行皮肤启用操作</summary>
+    /// <summary>执行皮肤使用操作（更新配置 + 通知 SkinSync）</summary>
     private void ApplyEnableSkin(SkinDownloadItem skin)
     {
         AppConfig.Instance.EnabledSkinId = skin.Id;
-        Logger.Info($"启用皮肤: {skin.Name} (#{skin.Id})");
+        Logger.Info($"使用皮肤: {skin.Name} (#{skin.Id})");
+        // 通知 SkinSync Mod 当前使用的皮肤名称
+        SkinSyncService.SetCurrentSkin(skin.Name);
         RefreshAllStates();
         UpdateSkinStats();
     }
@@ -693,7 +762,7 @@ public partial class SkinPage : UserControl
         _selectedSkin = null;
         DetailPanel.IsVisible = false;
         NoSelectionHint.IsVisible = true;
-        LoadSkins();
+        _ = LoadSkinsAsync();
     }
 
     /// <summary>取消删除</summary>
@@ -729,7 +798,7 @@ public partial class SkinPage : UserControl
         _selectedSkin = null;
         DetailPanel.IsVisible = false;
         NoSelectionHint.IsVisible = true;
-        LoadSkins();
+        _ = LoadSkinsAsync();
         AppNotification.Show($"已删除 {count} 个皮肤", NotificationType.Success);
     }
 
@@ -749,7 +818,7 @@ public partial class SkinPage : UserControl
         _selectedSkin = null;
         DetailPanel.IsVisible = false;
         NoSelectionHint.IsVisible = true;
-        LoadSkins();
+        _ = LoadSkinsAsync();
     }
 
     // ── 异步加载云端缩略图 ─────────────────────────────────────

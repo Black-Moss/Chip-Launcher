@@ -8,22 +8,22 @@ namespace ChipLauncher.Services;
 public class ConfigEntry
 {
     /// <summary>所属节（如 [General]）</summary>
-    public string Section { get; set; } = string.Empty;
+    public string Section { get; init; } = string.Empty;
 
     /// <summary>键名</summary>
-    public string Key { get; set; } = string.Empty;
+    public string Key { get; init; } = string.Empty;
 
     /// <summary>当前值</summary>
     public string Value { get; set; } = string.Empty;
 
     /// <summary>描述（## 注释）</summary>
-    public string Description { get; set; } = string.Empty;
+    public string Description { get; init; } = string.Empty;
 
     /// <summary>设置类型（如 Boolean, String, Int32）</summary>
-    public string SettingType { get; set; } = string.Empty;
+    public string SettingType { get; init; } = string.Empty;
 
     /// <summary>默认值</summary>
-    public string DefaultValue { get; set; } = string.Empty;
+    public string DefaultValue { get; init; } = string.Empty;
 }
 
 /// <summary>
@@ -39,10 +39,10 @@ public class BepInExConfig
     }
 
     /// <summary>所有配置项</summary>
-    public List<ConfigEntry> Entries { get; } = new();
+    public List<ConfigEntry> Entries { get; } = [];
 
     /// <summary>文件头部（文件开头的注释等）</summary>
-    public string Header { get; private set; } = string.Empty;
+    private string Header { get; set; } = string.Empty;
 
     /// <summary>获取配置文件名（不含路径）</summary>
     public string FileName => Path.GetFileName(_filePath);
@@ -53,9 +53,9 @@ public class BepInExConfig
         get
         {
             // 从 Header 中提取插件名和版本
-            foreach (var entry in Entries)
-                if (!string.IsNullOrEmpty(entry.Description))
-                    return entry.Description;
+            foreach (var entry in Entries
+                         .Where(entry => !string.IsNullOrEmpty(entry.Description)))
+                return entry.Description;
             return FileName;
         }
     }

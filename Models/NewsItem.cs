@@ -5,8 +5,8 @@ namespace ChipLauncher.Models;
 /// </summary>
 public class NewsItem
 {
-    public string Title { get; set; } = string.Empty;
-    public string Content { get; set; } = string.Empty;
-    public string Url { get; set; } = string.Empty;
-    public DateTime PublishDate { get; set; }
+    public string Title { get; init; } = string.Empty;
+    public string Content { get; init; } = string.Empty;
+    public string Url { get; init; } = string.Empty;
+    public DateTime PublishDate { get; init; }
 }

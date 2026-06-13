@@ -141,6 +141,26 @@ public partial class ModsPage : UserControl
 
             foreach (var dir in Directory.GetDirectories(pluginsDir))
             {
+                // 先扫描 .disabled（禁用的模组）→ 确保依赖 .dll 不会干扰识别
+                var disabledFiles = Directory.GetFiles(dir, "*.disabled");
+                if (disabledFiles.Length > 0)
+                {
+                    var disabledPath = disabledFiles[0];
+                    var (dGuid, dName, _) = ModInstaller.GetBepInPluginInfo(disabledPath);
+                    if (!string.IsNullOrEmpty(dGuid))
+                    {
+                        mods.Add(new ModInfo
+                        {
+                            Name = dName ?? Path.GetFileName(dir),
+                            Guid = dGuid,
+                            DirectoryPath = dir,
+                            PluginFilePath = disabledPath
+                        });
+                        continue;
+                    }
+                }
+
+                // 再扫描 .dll（启用的模组）→ 依赖 .dll 无 [BepInPlugin] 会被跳过
                 var dllFiles = Directory.GetFiles(dir, "*.dll");
                 if (dllFiles.Length > 0)
                 {
@@ -153,25 +173,6 @@ public partial class ModsPage : UserControl
                         Guid = guid,
                         DirectoryPath = dir,
                         PluginFilePath = dllFiles[0]
-                    });
-                    continue;
-                }
-
-                var disabledFiles = Directory.GetFiles(dir, "*.disabled");
-                if (disabledFiles.Length <= 0) continue;
-
-                {
-                    // .disabled 文件本质就是重命名的 DLL，可直接读取元数据
-                    var disabledPath = disabledFiles[0];
-                    var (dGuid, dName, _) = ModInstaller.GetBepInPluginInfo(disabledPath);
-                    if (string.IsNullOrEmpty(dGuid)) continue;
-
-                    mods.Add(new ModInfo
-                    {
-                        Name = dName ?? Path.GetFileName(dir),
-                        Guid = dGuid,
-                        DirectoryPath = dir,
-                        PluginFilePath = disabledPath
                     });
                 }
             }
@@ -780,6 +781,11 @@ public partial class ModsPage : UserControl
     {
         try
         {
+            // 先显式删除插件文件（.dll 或 .disabled），确保文件被移除
+            if (!string.IsNullOrEmpty(mod.PluginFilePath) && File.Exists(mod.PluginFilePath))
+                File.Delete(mod.PluginFilePath);
+
+            // 再递归删除整个模组目录
             if (Directory.Exists(mod.DirectoryPath))
                 Directory.Delete(mod.DirectoryPath, true);
         }

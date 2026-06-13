@@ -7,10 +7,10 @@ namespace ChipLauncher.Models;
 public enum SkinSortMode
 {
     /// <summary>A-Z（按名称升序）</summary>
-    NameAZ,
+    NameAz,
 
     /// <summary>Z-A（按名称降序）</summary>
-    NameZA,
+    NameZa,
 
     /// <summary>ID 升序</summary>
     Id,
@@ -141,9 +141,6 @@ public class SkinDownloadItem : INotifyPropertyChanged
     /// <summary>格式化的文件大小（如 "1.2 MB"）</summary>
     public string SizeDisplay => FormatSize(Size);
 
-    /// <summary>格式化的上传时间</summary>
-    public string UploadTimeDisplay => UploadTime == DateTime.MinValue ? "未知" : UploadTime.ToString("yyyy-MM-dd");
-
     /// <summary>格式化的下载量</summary>
     public string DownloadsDisplay => FormatNumber(Downloads);
 
@@ -164,23 +161,29 @@ public class SkinDownloadItem : INotifyPropertyChanged
 
     public event PropertyChangedEventHandler? PropertyChanged;
 
-    protected void OnPropertyChanged([CallerMemberName] string? name = null)
+    private void OnPropertyChanged([CallerMemberName] string? name = null)
     {
         PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(name));
     }
 
     private static string FormatSize(long bytes)
     {
-        if (bytes < 1024) return $"{bytes} B";
-        if (bytes < 1024 * 1024) return $"{bytes / 1024.0:F1} KB";
-        if (bytes < 1024 * 1024 * 1024) return $"{bytes / (1024.0 * 1024.0):F1} MB";
-        return $"{bytes / (1024.0 * 1024.0 * 1024.0):F2} GB";
+        return bytes switch
+        {
+            < 1024 => $"{bytes} B",
+            < 1024 * 1024 => $"{bytes / 1024.0:F1} KB",
+            < 1024 * 1024 * 1024 => $"{bytes / (1024.0 * 1024.0):F1} MB",
+            _ => $"{bytes / (1024.0 * 1024.0 * 1024.0):F2} GB"
+        };
     }
 
     private static string FormatNumber(long value)
     {
-        if (value < 1000) return value.ToString();
-        if (value < 1_000_000) return $"{value / 1000.0:F1}K";
-        return $"{value / 1_000_000.0:F1}M";
+        return value switch
+        {
+            < 1000 => value.ToString(),
+            < 1_000_000 => $"{value / 1000.0:F1}K",
+            _ => $"{value / 1_000_000.0:F1}M"
+        };
     }
 }

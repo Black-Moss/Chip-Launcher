@@ -10,6 +10,7 @@ using Avalonia.Interactivity;
 using Avalonia.Media.Imaging;
 using ChipLauncher.Models;
 using ChipLauncher.Services;
+using SukiUI.Dialogs;
 
 namespace ChipLauncher.Views;
 
@@ -48,10 +49,48 @@ public partial class SkinDownloadPage : UserControl
     ///     每次控件被附加到可视化树时（包括 SukiUI 标签切换），刷新所有皮肤的本地下载状态。
     ///     这样用户在 SkinPage 删除皮肤后切回此页，下载按钮能正确显示为"可下载"。
     /// </summary>
-    protected override void OnAttachedToVisualTree(VisualTreeAttachmentEventArgs e)
+    protected override async void OnAttachedToVisualTree(VisualTreeAttachmentEventArgs e)
     {
         base.OnAttachedToVisualTree(e);
+
+        // 检查 SkinSync 模组（每会话仅第一次弹窗）
+        if (!SkinSyncService.IsWarningShownThisSession())
+            await CheckSkinSyncModAsync();
+
         RefreshDownloadStatus();
+    }
+
+    /// <summary>检查 SkinSync 模组，未安装时弹出提示对话框（每会话仅弹一次）。</summary>
+    private static async Task CheckSkinSyncModAsync()
+    {
+        if (SkinSyncService.IsSkinSyncModInstalled()) return;
+
+        SkinSyncService.MarkWarningShown();
+        Logger.Warn("SkinSync 模组未安装 — 皮肤系统不可用");
+
+        await MainWindow.DialogManager.CreateDialog()
+            .WithTitle("需要 SkinSync 模组")
+            .WithContent("皮肤系统依赖 SkinSync 模组才能正常工作。\n\n" +
+                         "SkinSync 是 BepInEx 插件，负责在游戏中加载自定义皮肤。\n" +
+                         "未安装时，皮肤管理功能不可用。\n\n" +
+                         "点击「前往下载」从 GitHub 获取最新版本。")
+            .WithActionButton("关闭", _ => { }, true)
+            .WithActionButton("前往下载", _ =>
+            {
+                try
+                {
+                    Process.Start(new ProcessStartInfo
+                    {
+                        FileName = "https://github.com/Bytechey/SkinSync/releases/latest",
+                        UseShellExecute = true
+                    });
+                }
+                catch (Exception ex)
+                {
+                    Logger.Error("打开 SkinSync 下载链接失败", ex);
+                }
+            }, true, "Flat", "Accent")
+            .TryShowAsync();
     }
 
     /// <summary>遍历当前列表，重新检查每个皮肤的本地下载状态</summary>
@@ -221,8 +260,8 @@ public partial class SkinDownloadPage : UserControl
 
         result = _currentSort switch
         {
-            SkinSortMode.NameAZ => result.OrderBy(s => s.Name, StringComparer.OrdinalIgnoreCase),
-            SkinSortMode.NameZA => result.OrderByDescending(s => s.Name, StringComparer.OrdinalIgnoreCase),
+            SkinSortMode.NameAz => result.OrderBy(s => s.Name, StringComparer.OrdinalIgnoreCase),
+            SkinSortMode.NameZa => result.OrderByDescending(s => s.Name, StringComparer.OrdinalIgnoreCase),
             SkinSortMode.Id => result.OrderBy(s => s.Id),
             SkinSortMode.Downloads => result.OrderByDescending(s => s.Downloads),
             SkinSortMode.Size => result.OrderByDescending(s => s.Size),
@@ -318,8 +357,8 @@ public partial class SkinDownloadPage : UserControl
         if (!_loaded) return;
         _currentSort = SortComboBox.SelectedIndex switch
         {
-            0 => SkinSortMode.NameAZ,
-            1 => SkinSortMode.NameZA,
+            0 => SkinSortMode.NameAz,
+            1 => SkinSortMode.NameZa,
             2 => SkinSortMode.Id,
             3 => SkinSortMode.Downloads,
             4 => SkinSortMode.Size,

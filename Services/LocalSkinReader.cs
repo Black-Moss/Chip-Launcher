@@ -8,22 +8,20 @@ namespace ChipLauncher.Services;
 /// </summary>
 public static class LocalSkinReader
 {
-    private static readonly string SkinsDir;
-
     static LocalSkinReader()
     {
         var baseDir = AppDomain.CurrentDomain.BaseDirectory;
-        SkinsDir = Path.Combine(baseDir, "skins");
+        SkinsDirectory = Path.Combine(baseDir, "skins");
     }
 
     /// <summary>本地 skins 根目录</summary>
-    public static string SkinsDirectory => SkinsDir;
+    public static string SkinsDirectory { get; }
 
     /// <summary>确保 skins 目录存在</summary>
-    public static void EnsureSkinsDir()
+    private static void EnsureSkinsDir()
     {
-        if (!Directory.Exists(SkinsDir))
-            Directory.CreateDirectory(SkinsDir);
+        if (!Directory.Exists(SkinsDirectory))
+            Directory.CreateDirectory(SkinsDirectory);
     }
 
     /// <summary>
@@ -35,7 +33,7 @@ public static class LocalSkinReader
         var result = new List<SkinDownloadItem>();
         EnsureSkinsDir();
 
-        foreach (var skinDir in Directory.GetDirectories(SkinsDir))
+        foreach (var skinDir in Directory.GetDirectories(SkinsDirectory))
         {
             // 跳过隐藏目录（如 .cache）
             var dirName = Path.GetFileName(skinDir);
@@ -60,12 +58,12 @@ public static class LocalSkinReader
 
             // 从统一元数据文件 skins/skins_metadata.json 读取云端数据
             var meta = id > 0 ? SkinsMetadataService.Get(id) : null;
-            string? cloudName = meta?.Name;
-            string? cloudAuthor = meta?.Author;
-            string? cloudThumbnailUrl = meta?.ThumbnailUrl;
-            List<string>? cloudGalleryUrls = meta?.GalleryUrls;
-            long cloudDownloads = meta?.Downloads ?? 0;
-            long cloudSize = meta?.Size ?? 0;
+            var cloudName = meta?.Name;
+            var cloudAuthor = meta?.Author;
+            var cloudThumbnailUrl = meta?.ThumbnailUrl;
+            var cloudGalleryUrls = meta?.GalleryUrls;
+            var cloudDownloads = meta?.Downloads ?? 0;
+            var cloudSize = meta?.Size ?? 0;
 
             // 缩略图：优先本地皮肤目录 thumb.*（下载时保存的），其次云端缓存
             string? thumbPath = null;
@@ -84,17 +82,25 @@ public static class LocalSkinReader
                 Name = cloudName ?? dirName,
                 Author = cloudAuthor,
                 Downloads = cloudDownloads,
-                Size = cloudSize > 0 ? cloudSize : files.Sum(f =>
-                {
-                    try { return new FileInfo(f).Length; }
-                    catch { return 0L; }
-                }),
+                Size = cloudSize > 0
+                    ? cloudSize
+                    : files.Sum(f =>
+                    {
+                        try
+                        {
+                            return new FileInfo(f).Length;
+                        }
+                        catch
+                        {
+                            return 0L;
+                        }
+                    }),
                 UploadTime = DateTime.MinValue,
                 ThumbnailUrl = cloudThumbnailUrl,
                 ThumbnailCachePath = thumbPath,
                 GalleryUrls = cloudGalleryUrls,
                 IsDownloaded = true,
-                DirectoryPath = skinDir  // 记录完整路径，供删除等操作使用
+                DirectoryPath = skinDir // 记录完整路径，供删除等操作使用
             });
         }
 
@@ -105,7 +111,7 @@ public static class LocalSkinReader
     public static bool IsSkinDownloaded(int skinId)
     {
         // 先检查纯数字目录
-        var skinDir = Path.Combine(SkinsDir, $"{skinId}");
+        var skinDir = Path.Combine(SkinsDirectory, $"{skinId}");
         if (Directory.Exists(skinDir))
         {
             var bodyDir = Path.Combine(skinDir, "Body");
@@ -116,8 +122,8 @@ public static class LocalSkinReader
         }
 
         // 回退：检查 Skin_{Id} 旧格式
-        skinDir = Path.Combine(SkinsDir, $"Skin_{skinId}");
-        if (Directory.Exists(skinDir))
+        skinDir = Path.Combine(SkinsDirectory, $"Skin_{skinId}");
+        if (!Directory.Exists(skinDir)) return false;
         {
             var bodyDir = Path.Combine(skinDir, "Body");
             if (!Directory.Exists(bodyDir))
@@ -126,13 +132,12 @@ public static class LocalSkinReader
                    Directory.GetFiles(bodyDir).Length > 0;
         }
 
-        return false;
     }
 
     /// <summary>获取指定 skin 目录名的本地路径（若无则返回 null）</summary>
     public static string? GetSkinDirectory(string dirName)
     {
-        var skinDir = Path.Combine(SkinsDir, dirName);
+        var skinDir = Path.Combine(SkinsDirectory, dirName);
         return Directory.Exists(skinDir) ? skinDir : null;
     }
 
@@ -141,15 +146,15 @@ public static class LocalSkinReader
     {
         // 先找纯数字目录
         var dir = GetSkinDirectory($"{skinId}");
-        if (dir != null) return dir;
-        // 回退 Skin_ 前缀旧格式
-        return GetSkinDirectory($"Skin_{skinId}");
+        return dir ??
+               // 回退 Skin_ 前缀旧格式
+               GetSkinDirectory($"Skin_{skinId}");
     }
 
     /// <summary>获取指定 skin 目录名的 Body 目录路径（若无则返回 null）</summary>
-    public static string? GetBodyDirectory(string dirName)
+    private static string? GetBodyDirectory(string dirName)
     {
-        var bodyDir = Path.Combine(SkinsDir, dirName, "Body");
+        var bodyDir = Path.Combine(SkinsDirectory, dirName, "Body");
         return Directory.Exists(bodyDir) ? bodyDir : null;
     }
 
@@ -158,22 +163,22 @@ public static class LocalSkinReader
     {
         // 先找纯数字目录
         var dir = GetBodyDirectory($"{skinId}");
-        if (dir != null) return dir;
-        // 回退 Skin_ 前缀旧格式
-        return GetBodyDirectory($"Skin_{skinId}");
+        return dir ??
+               // 回退 Skin_ 前缀旧格式
+               GetBodyDirectory($"Skin_{skinId}");
     }
 
     /// <summary>获取 skins 目录的总皮肤数</summary>
     public static int GetLocalSkinCount()
     {
         EnsureSkinsDir();
-        return Directory.GetDirectories(SkinsDir)
-                        .Count(d =>
-                        {
-                            var name = Path.GetFileName(d);
-                            return !name.StartsWith('.') &&
-                                   Directory.Exists(Path.Combine(d, "Body"));
-                        });
+        return Directory.GetDirectories(SkinsDirectory)
+            .Count(d =>
+            {
+                var name = Path.GetFileName(d);
+                return !name.StartsWith('.') &&
+                       Directory.Exists(Path.Combine(d, "Body"));
+            });
     }
 
     /// <summary>
@@ -185,20 +190,19 @@ public static class LocalSkinReader
     {
         // 1. 先在皮肤根目录找 thumb.* 或 preview.*（下载时保存的高清缩略图）
         var candidates = Directory.GetFiles(skinDir, "thumb.*")
-                        .Concat(Directory.GetFiles(skinDir, "preview.*"))
-                        .Concat(Directory.GetFiles(skinDir, "thumbnail.*"))
-                        .ToList();
+            .Concat(Directory.GetFiles(skinDir, "preview.*"))
+            .Concat(Directory.GetFiles(skinDir, "thumbnail.*"))
+            .ToList();
 
         if (candidates.Count > 0)
             return candidates[0];
 
         // 2. 检查云端缓存
-        if (SkinCache.HasCache(skinName))
-            return SkinCache.GetLocalPath(skinName);
-
-        // 3. ⚠ 不再回退到 Body 目录的贴图 — 那些是游戏内的低分辨率贴图，
-        //   用作缩略图会非常模糊。云端缓存或本地 thumb.* 都不存在时返回 null，
-        //   由调用方决定是否异步下载云端缩略图。
-        return null;
+        return SkinCache.HasCache(skinName)
+            ? SkinCache.GetLocalPath(skinName) :
+            // 3. ⚠ 不再回退到 Body 目录的贴图 — 那些是游戏内的低分辨率贴图，
+            //   用作缩略图会非常模糊。云端缓存或本地 thumb.* 都不存在时返回 null，
+            //   由调用方决定是否异步下载云端缩略图。
+            null;
     }
 }

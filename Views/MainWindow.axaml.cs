@@ -1,4 +1,5 @@
 using System.Diagnostics;
+using ChipLauncher.Models;
 using Avalonia.Controls;
 using Avalonia.Input;
 using Avalonia.Interactivity;
@@ -626,6 +627,10 @@ public partial class MainWindow : SukiWindow
     private void LaunchGame()
     {
         var config = AppConfig.Instance;
+
+        // 启动前：同步所有皮肤到 CustomSprites，并设置 CurrentSkin
+        SyncSkinsBeforeLaunch();
+
         if (!string.IsNullOrEmpty(config.GamePath))
         {
             Logger.Info($"启动游戏（本地路径）: {config.GamePath}");
@@ -636,5 +641,31 @@ public partial class MainWindow : SukiWindow
             Logger.Info("启动游戏（Steam）");
             _gameService.LaunchViaSteam();
         }
+    }
+
+    /// <summary>启动前将全部本地皮肤同步到 CustomSprites，并设置当前使用的皮肤</summary>
+    private static void SyncSkinsBeforeLaunch()
+    {
+        // 1. 全部皮肤统一同步（用名称做目录）
+        SkinSyncService.SyncAllToGame();
+
+        // 2. 设置 CurrentSkin 配置
+        var enabledId = AppConfig.Instance.EnabledSkinId;
+        if (enabledId <= 0)
+        {
+            SkinSyncService.ClearCurrentSkin();
+            return;
+        }
+
+        var localSkins = LocalSkinReader.ScanLocalSkins();
+        var enabledSkin = localSkins.FirstOrDefault(s => s.Id == enabledId);
+        if (enabledSkin == null)
+        {
+            Logger.Warn($"[启动] 已选择皮肤 #{enabledId} 但未在本地扫描结果中找到");
+            SkinSyncService.ClearCurrentSkin();
+            return;
+        }
+
+        SkinSyncService.SetCurrentSkin(enabledSkin.Name);
     }
 }

@@ -142,18 +142,15 @@ public static class GameLocalization
                 {
                     var trimmed = line.Trim();
                     // 匹配形如: "path"  "X:\\Some\\Path"
-                    if (trimmed.StartsWith("\"path\"") && trimmed.IndexOf('"', 7) >= 0)
-                    {
-                        var start = trimmed.IndexOf('"', 7) + 1;
-                        var end = trimmed.LastIndexOf('"');
-                        if (start > 0 && end > start)
-                        {
-                            var libPath = trimmed.Substring(start, end - start)
-                                .Replace(@"\\", "\\"); // VDF 中使用双反斜杠
-                            if (!libraryPaths.Contains(libPath, StringComparer.OrdinalIgnoreCase))
-                                libraryPaths.Add(libPath);
-                        }
-                    }
+                    if (!trimmed.StartsWith("\"path\"")
+                        || trimmed.IndexOf('"', 7) < 0) continue;
+                    var start = trimmed.IndexOf('"', 7) + 1;
+                    var end = trimmed.LastIndexOf('"');
+                    if (start <= 0 || end <= start) continue;
+                    var libPath = trimmed.Substring(start, end - start)
+                        .Replace(@"\\", "\\"); // VDF 中使用双反斜杠
+                    if (!libraryPaths.Contains(libPath, StringComparer.OrdinalIgnoreCase))
+                        libraryPaths.Add(libPath);
                 }
             }
 
@@ -234,12 +231,9 @@ public static class GameLocalization
     {
         var root = doc.RootElement;
 
-        foreach (var key in DisplayKeys)
-        {
-            var text = FindText(root, key);
-            if (text != null)
-                result.Add(text);
-        }
+        result.AddRange(DisplayKeys
+            .Select(key => FindText(root, key))
+            .OfType<string>());
 
         return result;
     }

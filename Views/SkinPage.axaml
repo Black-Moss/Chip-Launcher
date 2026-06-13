@@ -349,5 +349,41 @@
                 </StackPanel>
             </Border>
         </Border>
+
+        <!-- ══════ 同步皮肤加载遮罩 ══════ -->
+        <Border Name="SyncOverlay"
+                Grid.ColumnSpan="3"
+                Background="#88000000"
+                IsVisible="False"
+                ZIndex="99">
+            <Border Background="#2a2a2a"
+                    BorderBrush="{StaticResource BorderBrush}"
+                    BorderThickness="1"
+                    CornerRadius="8"
+                    Padding="40,30"
+                    Width="320"
+                    Height="150"
+                    VerticalAlignment="Center"
+                    HorizontalAlignment="Center">
+                <StackPanel Spacing="14" VerticalAlignment="Center">
+                    <TextBlock Text="正在同步皮肤到游戏…"
+                               FontSize="15"
+                               Foreground="#cccccc"
+                               HorizontalAlignment="Center" />
+                    <TextBlock Name="SyncStatusText"
+                               FontSize="12"
+                               Foreground="#888"
+                               HorizontalAlignment="Center" />
+                    <ProgressBar Name="SyncProgressBar"
+                                 Height="6"
+                                 Minimum="0"
+                                 Maximum="100"
+                                 Value="0"
+                                 Foreground="#e67e22"
+                                 Background="#444"
+                                 BorderThickness="0" />
+                </StackPanel>
+            </Border>
+        </Border>
     </Grid>
 </UserControl>

@@ -5,9 +5,6 @@ using System.Text.Json.Serialization;
 
 namespace ChipLauncher.Services;
 
-/// <summary>
-///     应用配置管理（JSON 文件存储）— 单例 + 自动保存（防抖 500ms）
-/// </summary>
 public class AppConfig : INotifyPropertyChanged
 {
     private static readonly string ConfigPath =
@@ -41,7 +38,6 @@ public class AppConfig : INotifyPropertyChanged
     {
     }
 
-    /// <summary>全局唯一实例，首次访问时自动从文件加载</summary>
     public static AppConfig Instance { get; } = Load();
 
     public string? GamePath
@@ -246,7 +242,7 @@ public class AppConfig : INotifyPropertyChanged
                     Directory.CreateDirectory(dir);
 
                 var json = JsonSerializer.Serialize(this, new JsonSerializerOptions { WriteIndented = true });
-                File.WriteAllText(ConfigPath, json);
+                await File.WriteAllTextAsync(ConfigPath, json, token);
                 Logger.Info("配置已保存");
             }
             catch (TaskCanceledException)
