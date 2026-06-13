@@ -12,6 +12,7 @@
         <entry key="Views/ModsPage.axaml" value="ChipLauncher.csproj" />
         <entry key="Views/NewsPage.axaml" value="ChipLauncher.csproj" />
         <entry key="Views/SettingsPage.axaml" value="ChipLauncher.csproj" />
+        <entry key="Views/SkinPage.axaml" value="ChipLauncher.csproj" />
       </map>
     </option>
   </component>

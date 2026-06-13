@@ -14,19 +14,16 @@ using SukiUI.Toasts;
 
 namespace ChipLauncher.Views;
 
-/// <summary>
-///     主窗口 - 游戏启动器（SukiUI Flat 主题）
-/// </summary>
 public partial class MainWindow : SukiWindow
 {
     // ===== 窗口级拖放安装模组 =====
 
     private static readonly HashSet<string> AllowedExtensions = new(StringComparer.OrdinalIgnoreCase)
     {
-        ".dll", ".zip", ".rar", ".7z", ".tar", ".gz", ".bz2"
+        ".dll", ".zip", ".rar", ".7z"
     };
 
-    private readonly IGameService _gameService;
+    private readonly GameService _gameService;
     private int _currentTextIndex;
     private string[] _gameTexts = [];
     private DispatcherTimer? _textTimer;
@@ -51,11 +48,23 @@ public partial class MainWindow : SukiWindow
         // 绑定 Dialog 主机
         DialogHost.Manager = DialogManager;
 
-        // SukiToastManager 不支持通知类型颜色，直接通过内容前缀区分
-
-        // 全局通知事件 → SukiUI Toast
+        // 全局通知事件 → 日志 + SukiUI Toast
         AppNotification.OnShow += (message, type) =>
         {
+            // Toast 内容同步输出到日志
+            switch (type)
+            {
+                case NotificationType.Error:
+                    Logger.Error(message);
+                    break;
+                case NotificationType.Warning:
+                    Logger.Warn(message);
+                    break;
+                default:
+                    Logger.Info(message);
+                    break;
+            }
+
             var toast = ToastManager.CreateToast();
             switch (type)
             {
@@ -90,21 +99,13 @@ public partial class MainWindow : SukiWindow
         LoadGameLocalization();
 
         // 初始化拖放遮罩标题
-        WindowDropOverlayTitle.Text = "📦 释放以安装模组";
+        WindowDropOverlayTitle.Text = "释放以安装模组";
     }
 
-    /// <summary>SukiUI Toast 管理器（全局可访问）</summary>
     public static ISukiToastManager ToastManager { get; } = new SukiToastManager();
 
-    /// <summary>SukiUI Dialog 管理器（全局可访问）</summary>
     public static ISukiDialogManager DialogManager { get; } = new SukiDialogManager();
 
-    /// <inheritdoc />
-    /// <summary>
-    ///     窗口打开后覆盖 SukiWindow 内部设置的亚克力效果，确保完全不透明。
-    ///     XAML 中已设置 TransparencyLevelHint="None"，但 SukiWindow.OnApplyTemplate
-    ///     可能在加载过程中重新设置，因此在 OnOpened 中再次覆盖。
-    /// </summary>
     protected override void OnOpened(EventArgs e)
     {
         base.OnOpened(e);
@@ -122,7 +123,6 @@ public partial class MainWindow : SukiWindow
         _ = CheckBepInExAsync();
     }
 
-    /// <summary>根据配置选择 SukiSideMenu 默认项，先取消所有项选中</summary>
     private void SelectSideMenuItem(string page)
     {
         // 先取消所有侧边栏项的选中状态，防止 SukiSideMenu 默认选中第一项
@@ -141,10 +141,7 @@ public partial class MainWindow : SukiWindow
         target.IsSelected = true;
     }
 
-    // ===== 更新检查 =====
-
-    /// <summary>检查更新，若有新版本则弹窗提示</summary>
-    internal static async Task CheckForUpdatesAsync()
+    private static async Task CheckForUpdatesAsync()
     {
         try
         {
@@ -168,18 +165,19 @@ public partial class MainWindow : SukiWindow
                     }
                     catch (Exception ex)
                     {
-                        Logger.Error($"打开下载页失败: {ex.Message}");
+                        Logger.Error("打开下载页失败", ex);
                     }
                 }, true, "Flat", "Accent")
                 .TryShowAsync();
         }
         catch (Exception ex)
         {
-            Logger.Warn($"自动检查更新失败: {ex.Message}");
+            Logger.Warn("自动检查更新失败", ex);
         }
     }
 
-    private void OnWindowDragEnter(object? sender, DragEventArgs e)
+    // ReSharper disable once UnusedMember.Local
+    private void OnWindowDragEnter(object? _, DragEventArgs e)
     {
         if (!HasCompatibleFile(e)) return;
         // SukiUI Dialog 在 SukiWindow.Hosts 层（高于主 Grid），对话框可见时不显示拖放遮罩
@@ -194,69 +192,80 @@ public partial class MainWindow : SukiWindow
         // 检查是否有 BepInEx 压缩包
         var isBepInEx = files.Any(f =>
         {
-            var path = f.Path?.LocalPath;
-            return path != null && IsBepInExFileName(path);
+            var path = f.Path.LocalPath;
+            return IsBepInExFileName(path);
         });
 
         if (files.Count == 1)
         {
-            var fileName = Path.GetFileName(files[0].Path?.LocalPath);
-            WindowDropFileName.Text = fileName != null ? $"📄 {fileName}" : "";
+            var fileName = Path.GetFileName(files[0].Path.LocalPath);
+            WindowDropFileName.Text = $"{fileName}";
         }
         else
         {
-            var firstFileName = Path.GetFileName(files[0].Path?.LocalPath);
-            WindowDropFileName.Text = firstFileName != null
-                ? $"📄 {firstFileName}  (+{files.Count - 1} 个文件)"
-                : $"📄 共 {files.Count} 个文件";
+            var firstFileName = Path.GetFileName(files[0].Path.LocalPath);
+            WindowDropFileName.Text = $"{firstFileName}  (+{files.Count - 1} 个文件)";
         }
 
         WindowDropOverlayTitle.Text = isBepInEx
-            ? "⚡ 释放以安装 BepInEx"
-            : "📦 释放以安装模组";
+            ? "释放以安装 BepInEx"
+            : "释放以安装模组";
         WindowDropOverlay.IsVisible = true;
     }
 
-    private void OnWindowDragLeave(object? sender, RoutedEventArgs e)
+    // ReSharper disable once UnusedMember.Local
+    private void OnWindowDragLeave(object? _, RoutedEventArgs __)
     {
         WindowDropOverlay.IsVisible = false;
     }
 
-    private async void OnWindowDrop(object? sender, DragEventArgs e)
+    // ReSharper disable once UnusedMember.Local
+    private async void OnWindowDrop(object? _, DragEventArgs e)
     {
-        WindowDropOverlay.IsVisible = false;
-        if (!HasCompatibleFile(e)) return;
+        try
+        {
+            WindowDropOverlay.IsVisible = false;
+            if (!HasCompatibleFile(e)) return;
 
 #pragma warning disable CS0618
-        var files = e.Data.GetFiles()?.ToList();
+            var files = e.Data.GetFiles()?.ToList();
 #pragma warning restore CS0618
-        if (files == null || files.Count == 0) return;
+            if (files == null || files.Count == 0) return;
+            var paths = files
+                .Select(f => f.Path.LocalPath)
+                .Where(_ => true)
+                .ToList();
 
-        var paths = files
-            .Select(f => f.Path?.LocalPath)
-            .Where(p => p != null)
-            .Cast<string>()
-            .ToList();
+            if (paths.Count == 0) return;
 
-        if (paths.Count == 0) return;
+            // 扫描每个文件，按实际内容分流：BepInEx 安装包 vs 模组包
+            string? bepInExPath = null;
+            foreach (var path in paths.Where(path => IsArchiveExtension(Path.GetExtension(path))))
+            {
+                var type = await InspectArchiveTypeAsync(path);
+                if (type != "bepinex") continue;
+                bepInExPath = path;
+                break;
+            }
 
-        // 检查是否包含 BepInEx 压缩包
-        var bepInExPaths = paths.Where(IsBepInExFileName).ToList();
-        if (bepInExPaths.Count > 0)
-        {
-            // 安装第一个 BepInEx 压缩包
-            await InstallBepInExFromFileAsync(bepInExPaths[0]);
-            return;
+            if (bepInExPath != null)
+            {
+                await InstallBepInExFromFileAsync(bepInExPath);
+                return;
+            }
+
+            SideMenuMods.IsSelected = true;
+            await Task.Delay(100);
+            if (SideMenuMods.PageContent is ModsPage modsPage)
+                await modsPage.InstallFilesAsync(paths);
         }
 
-        SideMenuMods.IsSelected = true;
-        await Task.Delay(100);
-
-        if (SideMenuMods.PageContent is ModsPage modsPage)
-            await modsPage.InstallFilesAsync(paths);
+        catch (Exception ex)
+        {
+            Logger.Error("拖放处理异常", ex);
+        }
     }
 
-    /// <summary>根据文件名判断是否为 BepInEx 压缩包</summary>
     private static bool IsBepInExFileName(string filePath)
     {
         var fileName = Path.GetFileName(filePath);
@@ -265,6 +274,84 @@ public partial class MainWindow : SukiWindow
                (fileName.EndsWith(".zip", StringComparison.OrdinalIgnoreCase) ||
                 fileName.EndsWith(".7z", StringComparison.OrdinalIgnoreCase) ||
                 fileName.EndsWith(".rar", StringComparison.OrdinalIgnoreCase));
+    }
+
+    private static bool IsArchiveExtension(string ext) => ext switch
+    {
+        ".zip" or ".rar" or ".7z" => true,
+        _ => false
+    };
+
+    private static bool IsValidArchive(string filePath)
+    {
+        try
+        {
+            using var fs = File.OpenRead(filePath);
+            Span<byte> header = stackalloc byte[8];
+            var read = fs.Read(header);
+            if (read < 4) return false;
+
+            // ZIP: PK\x03\x04 / PK\x05\x06 / PK\x07\x08
+            if (header[0] == 'P' && header[1] == 'K') return true;
+            // 7z: 7z\xBC\xAF\x27\x1C
+            if (header[0] == '7' && header[1] == 'z' && header[2] == 0xBC) return true;
+            // RAR: Rar!\x1A\x07
+            if (header[0] == 'R' && header[1] == 'a' && header[2] == 'r' && header[3] == '!') return true;
+            // GZip: \x1F\x8B
+            if (header[0] == 0x1F && header[1] == 0x8B) return true;
+            // BZip2: BZ
+            return header[0] == 'B' && header[1] == 'Z';
+        }
+        catch
+        {
+            return false;
+        }
+    }
+
+    private static async Task<string> InspectArchiveTypeAsync(string filePath)
+    {
+        return await Task.Run(() =>
+        {
+            try
+            {
+                using var stream = File.OpenRead(filePath);
+                using var archive = ArchiveFactory.OpenArchive(stream, new ReaderOptions());
+                var hasBepInExDir = false;
+                var hasWinHttpDll = false;
+                var hasDoorstopVersion = false;
+                var hasDllFile = false;
+
+                foreach (var entry in archive.Entries)
+                {
+                    if (entry.IsDirectory) continue;
+                    var path = entry.Key?.Replace('\\', '/') ?? "";
+
+                    if (path.StartsWith("BepInEx/", StringComparison.OrdinalIgnoreCase))
+                        hasBepInExDir = true;
+                    else if (path.Equals("winhttp.dll", StringComparison.OrdinalIgnoreCase))
+                        hasWinHttpDll = true;
+                    else if (path.Equals(".doorstop_version", StringComparison.OrdinalIgnoreCase))
+                        hasDoorstopVersion = true;
+                    else if (path.EndsWith(".dll", StringComparison.OrdinalIgnoreCase))
+                        hasDllFile = true;
+                }
+
+                // BepInEx 安装包特征：包含 BepInEx/ 目录 / winhttp.dll / .doorstop_version
+                if (hasBepInExDir
+                    || hasWinHttpDll
+                    || hasDoorstopVersion)
+                    return "bepinex";
+
+                // 包含 DLL 文件 → 模组包
+                return hasDllFile
+                    ? "mod"
+                    : "unknown";
+            }
+            catch
+            {
+                return "unknown";
+            }
+        });
     }
 
     private static bool HasCompatibleFile(DragEventArgs e)
@@ -277,14 +364,13 @@ public partial class MainWindow : SukiWindow
 
         return files.Any(f =>
         {
-            var path = f.Path?.LocalPath;
-            if (path == null) return false;
+            var path = f.Path.LocalPath;
             var ext = Path.GetExtension(path);
-            return AllowedExtensions.Contains(ext);
+            if (!AllowedExtensions.Contains(ext)) return false;
+            // 压缩包扩展名需要额外验证魔数，防止非存档文件误触发拖放遮罩
+            return !IsArchiveExtension(ext) || IsValidArchive(path);
         });
     }
-
-    // ===== 启动时后台任务 =====
 
     private static async Task PrefetchNewsAsync()
     {
@@ -295,7 +381,7 @@ public partial class MainWindow : SukiWindow
         }
         catch (Exception ex)
         {
-            Logger.Warn($"预取资讯失败: {ex.Message}");
+            Logger.Warn("预取资讯失败", ex);
         }
     }
 
@@ -311,17 +397,15 @@ public partial class MainWindow : SukiWindow
         }
         catch (Exception ex)
         {
-            Logger.Warn($"加载游戏文本失败: {ex.Message}");
+            Logger.Warn("加载游戏文本失败", ex);
         }
     }
 
-    /// <summary>点击 BepInEx 警告按钮时打开安装对话框</summary>
-    private void OnBepInExWarningClick(object? sender, RoutedEventArgs e)
+    private void OnBepInExWarningClick(object? _, RoutedEventArgs e)
     {
-        _ = CheckBepInExAsync();
+        var __ = CheckBepInExAsync();
     }
 
-    /// <summary>检查 BepInEx 状态，未安装时弹窗并提供下载/选择文件功能</summary>
     private async Task CheckBepInExAsync()
     {
         if (GameLocalization.IsBepInExInstalled())
@@ -363,7 +447,6 @@ public partial class MainWindow : SukiWindow
         _isBepInExDialogActive = false;
     }
 
-    /// <summary>打开文件选择器，安装用户选择的 BepInEx 压缩包</summary>
     private async Task PickAndInstallBepInExAsync()
     {
         try
@@ -396,7 +479,6 @@ public partial class MainWindow : SukiWindow
         }
     }
 
-    /// <summary>直接从文件路径安装 BepInEx（验证 + 解压）</summary>
     private async Task InstallBepInExFromFileAsync(string filePath)
     {
         WindowDropOverlay.IsVisible = false;
@@ -405,9 +487,9 @@ public partial class MainWindow : SukiWindow
         bool isBepInEx;
         try
         {
-            using var stream = File.OpenRead(filePath);
-            using var archive = SharpCompress.Archives.ArchiveFactory.OpenArchive(stream,
-                new SharpCompress.Readers.ReaderOptions());
+            await using var stream = File.OpenRead(filePath);
+            using var archive = ArchiveFactory.OpenArchive(stream,
+                new ReaderOptions());
             var entries = archive.Entries.Select(e => e.Key?.Replace('\\', '/') ?? "").ToHashSet();
             isBepInEx = entries.Any(k => k.Equals(".doorstop_version", StringComparison.OrdinalIgnoreCase)) &&
                         entries.Any(k => k.StartsWith("BepInEx/", StringComparison.OrdinalIgnoreCase)) &&
@@ -445,8 +527,8 @@ public partial class MainWindow : SukiWindow
         await Task.Run(() =>
         {
             using var stream = File.OpenRead(filePath);
-            using var archive = SharpCompress.Archives.ArchiveFactory.OpenArchive(stream,
-                new SharpCompress.Readers.ReaderOptions());
+            using var archive = ArchiveFactory.OpenArchive(stream,
+                new ReaderOptions());
             var archiveDir = archive.Entries.First().Key?.Replace('\\', '/') ?? "";
             var baseDir = archiveDir.Contains('/')
                 ? archiveDir[..archiveDir.IndexOf('/')]
@@ -456,13 +538,14 @@ public partial class MainWindow : SukiWindow
             {
                 if (entry.IsDirectory) continue;
                 var relPath = entry.Key?.Replace('\\', '/') ?? "";
-                if (!string.IsNullOrEmpty(baseDir) && relPath.StartsWith(baseDir + "/"))
+                if (!string.IsNullOrEmpty(baseDir)
+                    && relPath.StartsWith(baseDir + "/"))
                     relPath = relPath[(baseDir.Length + 1)..];
 
                 var destPath = Path.Combine(gameDir, relPath);
                 var destDir = Path.GetDirectoryName(destPath);
                 if (destDir != null) Directory.CreateDirectory(destDir);
-                entry.WriteToFile(destPath, new SharpCompress.Common.ExtractionOptions
+                entry.WriteToFile(destPath, new ExtractionOptions
                     { ExtractFullPath = true, Overwrite = true });
             }
         });
@@ -476,6 +559,7 @@ public partial class MainWindow : SukiWindow
                 DialogManager.TryDismissDialog(_bepInExDialog);
                 _bepInExDialog = null;
             }
+
             BepInExWarning.IsVisible = false;
             AppNotification.Show("BepInEx 安装成功！", NotificationType.Success);
         }
@@ -487,16 +571,23 @@ public partial class MainWindow : SukiWindow
 
     private async void ShowCurrentText()
     {
-        if (_gameTexts.Length == 0) return;
+        try
+        {
+            if (_gameTexts.Length == 0) return;
 
-        if (GameInfoPanel.IsVisible)
-            await FadeGameInfoAsync(1, 0, 300);
+            if (GameInfoPanel.IsVisible)
+                await FadeGameInfoAsync(1, 0, 300);
 
-        var text = _gameTexts[_currentTextIndex % _gameTexts.Length];
-        GameInfoPanel.ItemsSource = new[] { text };
-        GameInfoPanel.IsVisible = true;
+            var text = _gameTexts[_currentTextIndex % _gameTexts.Length];
+            GameInfoPanel.ItemsSource = new[] { text };
+            GameInfoPanel.IsVisible = true;
 
-        await FadeGameInfoAsync(0, 1, 300);
+            await FadeGameInfoAsync(0, 1, 300);
+        }
+        catch (Exception ex)
+        {
+            Logger.Error("切换游戏文本显示异常", ex);
+        }
     }
 
     private async Task FadeGameInfoAsync(double from, double to, int durationMs)
@@ -523,8 +614,6 @@ public partial class MainWindow : SukiWindow
         };
         _textTimer.Start();
     }
-
-    // ===== 游戏启动 =====
 
     private void LaunchGame()
     {

@@ -58,6 +58,12 @@ public static class Logger
         Write(LogLevel.Warning, message);
     }
 
+    /// <summary>写入警告日志（带异常）</summary>
+    public static void Warn(string message, Exception ex)
+    {
+        Write(LogLevel.Warning, $"{message}{Environment.NewLine}{ex}");
+    }
+
     /// <summary>写入错误日志</summary>
     public static void Error(string message)
     {
