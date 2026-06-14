@@ -1,6 +1,24 @@
 # 更新日志
 
-## [1.2.0] - 2025-xx-xx
+## [1.1.1] - 2026/6/14
+
+### 🧩 模组管理优化
+
+- **配置面板显示节标题** — 模组 BepInEx .cfg 配置现在会在每节首个条目上方显示彩色节标题（如 `[General]`、`[Settings]`），便于区分不同配置区域。[`ModsPage.axaml`](Views/ModsPage.axaml:267) DataTemplate 新增 `IsFirstInSection` 绑定的节标题 Border；[`BepInExConfig`](Services/BepInExConfig.cs:68) 解析器使用 `seenSections` 哈希集追踪每节的首次出现
+
+### 🔧 问题修复
+
+- **SkinSync 模组检测路径覆盖** — 修正 [`IsSkinSyncModInstalled()`](Services/SkinSyncService.cs:17) 显式检查 `plugins\Skin Sync Mod\SkinSync.dll` 子目录路径
+
+### 📄 修改文件
+
+| 文件                                                           | 变更                            |
+|--------------------------------------------------------------|-------------------------------|
+| [`Views/ModsPage.axaml`](Views/ModsPage.axaml:267)           | 配置 DataTemplate 添加节标题显示    |
+| [`Services/BepInExConfig.cs`](Services/BepInExConfig.cs:68)  | 解析器标记 `IsFirstInSection`     |
+| [`Services/SkinSyncService.cs`](Services/SkinSyncService.cs) | 添加显式子目录检测路径              |
+
+## [1.1.0] - 2026/6/13
 
 ### ✨ 新增功能
 

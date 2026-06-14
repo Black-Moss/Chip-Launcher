@@ -267,49 +267,63 @@
                 <ItemsControl Name="ConfigItemsControl">
                     <ItemsControl.ItemTemplate>
                         <DataTemplate>
-                            <Border Padding="10,8"
-                                    Margin="0,0,0,8"
-                                    BorderBrush="{StaticResource BorderBrush}"
-                                    BorderThickness="0,0,0,1">
-                                <Grid RowDefinitions="Auto,Auto,Auto">
-
-                                    <!-- 描述 -->
-                                    <TextBlock Text="{Binding Description}"
-                                               FontSize="12"
-                                               Foreground="#aaa"
-                                               TextWrapping="Wrap"
-                                               Margin="0,0,0,2" />
-
-                                    <!-- 键名 + 类型 -->
-                                    <StackPanel Grid.Row="1" Orientation="Horizontal" Spacing="8" Margin="0,0,0,4">
-                                        <TextBlock Text="{Binding Key}"
-                                                   FontSize="13"
-                                                   FontWeight="Bold"
-                                                   Foreground="{StaticResource TextPrimaryBrush}" />
-                                        <TextBlock Text="{Binding SettingType, StringFormat='({0})'}"
-                                                   FontSize="11"
-                                                   Foreground="#888" />
-                                        <TextBlock Text="{Binding DefaultValue, StringFormat='默认: {0}'}"
-                                                   FontSize="11"
-                                                   Foreground="#666" />
-                                    </StackPanel>
-
-                                    <!-- 布尔值使用开关 -->
-                                    <ToggleSwitch Grid.Row="2"
-                                                  IsChecked="{Binding Value, Converter={x:Static local:ModsPage.StringToBoolConverter}, Mode=TwoWay}"
-                                                  OnContent="开启"
-                                                  OffContent="关闭"
-                                                  IsVisible="{Binding SettingType, Converter={x:Static local:ModsPage.IsBooleanConverter}}" />
-
-                                    <!-- 非布尔值使用文本输入框 -->
-                                    <TextBox Grid.Row="2"
-                                             Text="{Binding Value, Mode=TwoWay}"
-                                             FontSize="13"
-                                             Padding="6,4"
-                                             AcceptsReturn="False"
-                                             IsVisible="{Binding SettingType, Converter={x:Static local:ModsPage.IsNotBooleanConverter}}" />
-                                </Grid>
-                            </Border>
+                            <StackPanel>
+                                <!-- 配置节标题（仅当 IsFirstInSection 为 true 时显示） -->
+                                <Border Padding="10,6"
+                                        Margin="0,8,0,4"
+                                        Background="{StaticResource PrimaryColor}"
+                                        CornerRadius="4"
+                                        IsVisible="{Binding IsFirstInSection}">
+                                    <TextBlock Text="{Binding Section, StringFormat='[{0}]'}"
+                                               FontSize="13"
+                                               FontWeight="Bold"
+                                               Foreground="White" />
+                                </Border>
+    
+                                <Border Padding="10,8"
+                                        Margin="0,0,0,8"
+                                        BorderBrush="{StaticResource BorderBrush}"
+                                        BorderThickness="0,0,0,1">
+                                    <Grid RowDefinitions="Auto,Auto,Auto">
+    
+                                        <!-- 描述 -->
+                                        <TextBlock Text="{Binding Description}"
+                                                   FontSize="12"
+                                                   Foreground="#aaa"
+                                                   TextWrapping="Wrap"
+                                                   Margin="0,0,0,2" />
+    
+                                        <!-- 键名 + 类型 -->
+                                        <StackPanel Grid.Row="1" Orientation="Horizontal" Spacing="8" Margin="0,0,0,4">
+                                            <TextBlock Text="{Binding Key}"
+                                                       FontSize="13"
+                                                       FontWeight="Bold"
+                                                       Foreground="{StaticResource TextPrimaryBrush}" />
+                                            <TextBlock Text="{Binding SettingType, StringFormat='({0})'}"
+                                                       FontSize="11"
+                                                       Foreground="#888" />
+                                            <TextBlock Text="{Binding DefaultValue, StringFormat='默认: {0}'}"
+                                                       FontSize="11"
+                                                       Foreground="#666" />
+                                        </StackPanel>
+    
+                                        <!-- 布尔值使用开关 -->
+                                        <ToggleSwitch Grid.Row="2"
+                                                      IsChecked="{Binding Value, Converter={x:Static local:ModsPage.StringToBoolConverter}, Mode=TwoWay}"
+                                                      OnContent="开启"
+                                                      OffContent="关闭"
+                                                      IsVisible="{Binding SettingType, Converter={x:Static local:ModsPage.IsBooleanConverter}}" />
+    
+                                        <!-- 非布尔值使用文本输入框 -->
+                                        <TextBox Grid.Row="2"
+                                                 Text="{Binding Value, Mode=TwoWay}"
+                                                 FontSize="13"
+                                                 Padding="6,4"
+                                                 AcceptsReturn="False"
+                                                 IsVisible="{Binding SettingType, Converter={x:Static local:ModsPage.IsNotBooleanConverter}}" />
+                                    </Grid>
+                                </Border>
+                            </StackPanel>
                         </DataTemplate>
                     </ItemsControl.ItemTemplate>
                 </ItemsControl>

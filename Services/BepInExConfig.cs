@@ -24,6 +24,10 @@ public class ConfigEntry
 
     /// <summary>默认值</summary>
     public string DefaultValue { get; init; } = string.Empty;
+
+    /// <summary>是否是所在节的第一个条目（用于显示节标题）</summary>
+    [System.Text.Json.Serialization.JsonIgnore]
+    public bool IsFirstInSection { get; set; }
 }
 
 /// <summary>
@@ -75,6 +79,7 @@ public class BepInExConfig
             var currentType = string.Empty;
             var currentDefault = string.Empty;
             var headerLines = new List<string>();
+            var seenSections = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
 
             var inHeader = true;
 
@@ -124,6 +129,10 @@ public class BepInExConfig
                     var key = trimmed[..eqIndex].Trim();
                     var value = trimmed[(eqIndex + 1)..].Trim();
 
+                    var isFirstInSection = !seenSections.Contains(currentSection);
+                    if (isFirstInSection)
+                        seenSections.Add(currentSection);
+
                     config.Entries.Add(new ConfigEntry
                     {
                         Section = currentSection,
@@ -131,7 +140,8 @@ public class BepInExConfig
                         Value = value,
                         Description = currentDescription,
                         SettingType = currentType,
-                        DefaultValue = currentDefault
+                        DefaultValue = currentDefault,
+                        IsFirstInSection = isFirstInSection
                     });
 
                     // 重置当前状态
