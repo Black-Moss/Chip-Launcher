@@ -106,6 +106,18 @@
                     </suki:SukiSideMenuItem.PageContent>
                 </suki:SukiSideMenuItem>
 
+                <suki:SukiSideMenuItem Header="模组下载"
+                                       Classes="Compact"
+                                       x:Name="SideMenuModDownload"
+                                       Foreground="#999999">
+                    <suki:SukiSideMenuItem.Icon>
+                        <TextBlock Text="📥" FontSize="20" />
+                    </suki:SukiSideMenuItem.Icon>
+                    <suki:SukiSideMenuItem.PageContent>
+                        <local:ModDownloadPage />
+                    </suki:SukiSideMenuItem.PageContent>
+                </suki:SukiSideMenuItem>
+
                 <suki:SukiSideMenuItem Header="游戏资讯"
                                        Classes="Compact"
                                        x:Name="SideMenuNews"

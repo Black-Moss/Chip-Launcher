@@ -1,0 +1,249 @@
+<UserControl xmlns="https://github.com/avaloniaui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:local="using:ChipLauncher.Views"
+             x:Class="ChipLauncher.Views.ModDownloadPage">
+    <Grid Margin="15" RowDefinitions="Auto,Auto,Auto,*">
+
+        <!-- ══════ 标题 ══════ -->
+        <TextBlock Text="模组下载"
+                   Classes="PageTitle" />
+
+        <!-- ══════ 顶部工具栏 ══════ -->
+        <Border Grid.Row="1"
+                Background="#1a1a1a"
+                BorderBrush="{StaticResource BorderBrush}"
+                BorderThickness="1"
+                CornerRadius="8"
+                Padding="10,8"
+                Margin="0,10,0,6">
+            <StackPanel Orientation="Horizontal" Spacing="10">
+
+                <!-- 搜索框 -->
+                <Border Background="#222"
+                        BorderBrush="{StaticResource BorderBrush}"
+                        BorderThickness="1"
+                        CornerRadius="5"
+                        Padding="6,3"
+                        Width="200">
+                    <TextBox Name="SearchTextBox"
+                             Background="Transparent"
+                             BorderThickness="0"
+                             Watermark="搜索模组名称..."
+                             FontSize="13"
+                             Padding="4,2"
+                             KeyDown="OnSearchKeyDown" />
+                </Border>
+
+                <!-- 分隔线 -->
+                <Border Width="1"
+                        Background="{StaticResource BorderBrush}"
+                        VerticalAlignment="Stretch" />
+
+                <!-- 分类过滤 -->
+                <StackPanel Orientation="Horizontal" Spacing="4"
+                            VerticalAlignment="Center">
+                    <TextBlock Text="分类"
+                               FontSize="12"
+                               Foreground="#888"
+                               VerticalAlignment="Center" />
+                    <ComboBox Name="CategoryFilterComboBox"
+                              Background="#222"
+                              BorderBrush="{StaticResource BorderBrush}"
+                              FontSize="12"
+                              Width="110"
+                              SelectionChanged="OnCategoryFilterChanged">
+                        <ComboBox.ItemTemplate>
+                            <DataTemplate>
+                                <TextBlock Text="{Binding}"
+                                           FontSize="12" />
+                            </DataTemplate>
+                        </ComboBox.ItemTemplate>
+                    </ComboBox>
+                </StackPanel>
+
+                <!-- 分隔线 -->
+                <Border Width="1"
+                        Background="{StaticResource BorderBrush}"
+                        VerticalAlignment="Stretch" />
+
+                <!-- 刷新按钮 -->
+                <Button Content="🔄 刷新"
+                        Classes="Flat"
+                        FontSize="12"
+                        Padding="8,5"
+                        VerticalAlignment="Center"
+                        Click="OnRefreshClick" />
+
+                <!-- 弹性空间 -->
+                <Border HorizontalAlignment="Stretch" />
+
+                <!-- 加载指示器 -->
+                <TextBlock Name="LoadingIndicator"
+                           Text="加载中..."
+                           FontSize="12"
+                           Foreground="#0af"
+                           VerticalAlignment="Center"
+                           IsVisible="False" />
+
+                <!-- 统计信息 -->
+                <TextBlock Name="StatTotalMods"
+                           Text="共 0 个模组"
+                           FontSize="12"
+                           Foreground="#aaa"
+                           VerticalAlignment="Center" />
+            </StackPanel>
+        </Border>
+
+        <!-- ══════ 分页栏 ══════ -->
+        <Border Name="PaginationPanel"
+                Grid.Row="2"
+                Background="#1a1a1a"
+                BorderBrush="{StaticResource BorderBrush}"
+                BorderThickness="1"
+                CornerRadius="6"
+                Padding="8,4"
+                Margin="0,0,0,8"
+                IsVisible="False">
+            <StackPanel Orientation="Horizontal" Spacing="8"
+                        HorizontalAlignment="Center">
+                <Button Name="BtnPrevPage"
+                        Content="‹ 上一页"
+                        Classes="Flat"
+                        FontSize="11"
+                        Padding="8,2"
+                        Click="OnPrevPageClick" />
+                <TextBlock Name="PageInfoText"
+                           Text="1 / 1"
+                           FontSize="12"
+                           Foreground="#aaa"
+                           VerticalAlignment="Center"
+                           Margin="8,0" />
+                <Button Name="BtnNextPage"
+                        Content="下一页 ›"
+                        Classes="Flat"
+                        FontSize="11"
+                        Padding="8,2"
+                        Click="OnNextPageClick" />
+            </StackPanel>
+        </Border>
+
+        <!-- ══════ 模组列表 ══════ -->
+        <ScrollViewer Grid.Row="3"
+                      VerticalScrollBarVisibility="Auto">
+            <ItemsControl Name="ModItemsControl">
+                <ItemsControl.ItemTemplate>
+                    <DataTemplate>
+                        <Border Padding="12,10"
+                                Margin="0,0,0,8"
+                                Background="#1a1a1a"
+                                BorderBrush="{StaticResource BorderBrush}"
+                                BorderThickness="1"
+                                CornerRadius="8">
+                            <Grid ColumnDefinitions="48,*,Auto"
+                                  RowDefinitions="Auto,Auto,Auto">
+
+                                <!-- 图标 / 缩略图占位 -->
+                                <Border Width="40" Height="40"
+                                        CornerRadius="6"
+                                        Background="#333"
+                                        VerticalAlignment="Center"
+                                        Margin="0,0,8,0">
+                                    <TextBlock Text="🧩"
+                                               FontSize="22"
+                                               HorizontalAlignment="Center"
+                                               VerticalAlignment="Center" />
+                                </Border>
+
+                                <!-- 名称 + 描述 -->
+                                <StackPanel Grid.Column="1" Spacing="2"
+                                            VerticalAlignment="Center">
+                                    <!-- 中文名 + 英文名 -->
+                                    <TextBlock Text="{Binding DisplayName}"
+                                               FontSize="13"
+                                               FontWeight="Bold"
+                                               Foreground="{StaticResource TextPrimaryBrush}"
+                                               TextWrapping="Wrap" />
+
+                                    <!-- 版本 + 分类 + 大小 -->
+                                    <StackPanel Orientation="Horizontal" Spacing="8">
+                                        <TextBlock Text="{Binding Version, StringFormat='v{0}'}"
+                                                   FontSize="11"
+                                                   Foreground="#0af" />
+                                        <Border Background="#222"
+                                                CornerRadius="3"
+                                                Padding="4,1">
+                                            <TextBlock Text="{Binding Category}"
+                                                       FontSize="11"
+                                                       Foreground="#888" />
+                                        </Border>
+                                        <TextBlock Text="{Binding FileSizeDisplay}"
+                                                   FontSize="11"
+                                                   Foreground="#666" />
+                                    </StackPanel>
+
+                                    <!-- 描述 -->
+                                    <TextBlock Text="{Binding Description}"
+                                               FontSize="11"
+                                               Foreground="#777"
+                                               TextWrapping="Wrap"
+                                               MaxHeight="32" />
+                                </StackPanel>
+
+                                <!-- 下载按钮 / 进度条 -->
+                                <StackPanel Grid.Column="2"
+                                            VerticalAlignment="Center"
+                                            Width="90"
+                                            Margin="8,0,0,0">
+                                    <!-- 已下载状态 -->
+                                    <Border IsVisible="{Binding IsDownloaded}"
+                                            Background="#1a3a1a"
+                                            CornerRadius="4"
+                                            Padding="8,4">
+                                        <TextBlock Text="✅ 已安装"
+                                                   FontSize="11"
+                                                   Foreground="#4caf50"
+                                                   HorizontalAlignment="Center" />
+                                    </Border>
+
+                                    <!-- 正在下载进度条 -->
+                                    <StackPanel IsVisible="{Binding ShowProgress}"
+                                                Spacing="2">
+                                        <ProgressBar Value="{Binding DownloadProgress}"
+                                                     Minimum="0"
+                                                     Maximum="100"
+                                                     Height="6"
+                                                     Foreground="{StaticResource PrimaryColor}" />
+                                        <TextBlock Text="{Binding DownloadProgress, StringFormat='{}{0:F0}%'}"
+                                                   FontSize="10"
+                                                   Foreground="#aaa"
+                                                   HorizontalAlignment="Center" />
+                                    </StackPanel>
+
+                                    <!-- 下载按钮 -->
+                                    <Button Content="📥 下载"
+                                            Classes="Flat Accent"
+                                            FontSize="11"
+                                            Padding="8,4"
+                                            Tag="{Binding}"
+                                            IsVisible="{Binding IsDownloaded, Converter={x:Static local:ModDownloadPage.InverseBoolConverter}}"
+                                            IsEnabled="{Binding IsDownloading, Converter={x:Static local:ModDownloadPage.InverseBoolConverter}}"
+                                            Click="OnDownloadModClick" />
+                                </StackPanel>
+                            </Grid>
+                        </Border>
+                    </DataTemplate>
+                </ItemsControl.ItemTemplate>
+            </ItemsControl>
+        </ScrollViewer>
+
+        <!-- ══════ 空状态提示 ══════ -->
+        <TextBlock Name="EmptyHint"
+                   Grid.Row="3"
+                   Text="暂无模组数据，点击「刷新」从服务器获取"
+                   FontSize="14"
+                   Foreground="#666"
+                   VerticalAlignment="Center"
+                   HorizontalAlignment="Center"
+                   IsVisible="True" />
+    </Grid>
+</UserControl>

@@ -1,6 +1,16 @@
 # 更新日志
 
-## [1.1.1] - 2026/6/14
+## [1.2.0] - 2026/6/14
+
+### ✨ 新增功能
+
+#### 📥 模组下载系统（全新）
+
+- **模组下载页** — 新增 [`ModDownloadPage`](Views/ModDownloadPage.axaml) 独立页面，从国内托管服务器获取模组列表，支持搜索、分类筛选、分页浏览
+- **托管服务器数据服务** — 新增 [`ModWebsiteService`](Services/ModWebsiteService.cs)，通过 HTTP JSON API 获取模组元数据（原名、汉化名、版本、分类、下载链接等），支持带进度回调的文件下载
+- **一键下载安装** — 下载完成后自动调用 [`ModInstaller`](Services/ModInstaller.cs) 安装到 BepInEx/plugins 目录，实时显示下载进度条
+- **本地已装检测** — 自动扫描 plugins 目录标记已安装模组，避免重复下载
+- **侧边栏导航** — 新增「模组下载」菜单项（📥），与皮肤下载页平行
 
 ### 🧩 模组管理优化
 
@@ -10,10 +20,22 @@
 
 - **SkinSync 模组检测路径覆盖** — 修正 [`IsSkinSyncModInstalled()`](Services/SkinSyncService.cs:17) 显式检查 `plugins\Skin Sync Mod\SkinSync.dll` 子目录路径
 
+### 📦 新增文件
+
+| 文件                                                                 | 说明                                    |
+|--------------------------------------------------------------------|---------------------------------------|
+| [`Models/ModDownloadItem.cs`](Models/ModDownloadItem.cs)           | 模组下载项数据模型（ID、名称、版本、下载链接、进度等）    |
+| [`Services/ModWebsiteService.cs`](Services/ModWebsiteService.cs)   | 托管服务器 HTTP 客户端（获取模组列表 + 带进度下载） |
+| [`Views/ModDownloadPage.axaml`](Views/ModDownloadPage.axaml)       | 模组下载页面 UI                          |
+| [`Views/ModDownloadPage.axaml.cs`](Views/ModDownloadPage.axaml.cs) | 模组下载页逻辑（搜索、分页、下载安装）             |
+
 ### 📄 修改文件
 
 | 文件                                                           | 变更                            |
 |--------------------------------------------------------------|-------------------------------|
+| [`Models/LauncherInfo.cs`](Models/LauncherInfo.cs:5)         | 版本号更新至 1.2.0                  |
+| [`Views/MainWindow.axaml`](Views/MainWindow.axaml:73)        | 新增「模组下载」侧边栏菜单项             |
+| [`Views/MainWindow.axaml.cs`](Views/MainWindow.axaml.cs:130) | 添加 `ModDownload` 页面路由       |
 | [`Views/ModsPage.axaml`](Views/ModsPage.axaml:267)           | 配置 DataTemplate 添加节标题显示    |
 | [`Services/BepInExConfig.cs`](Services/BepInExConfig.cs:68)  | 解析器标记 `IsFirstInSection`     |
 | [`Services/SkinSyncService.cs`](Services/SkinSyncService.cs) | 添加显式子目录检测路径              |

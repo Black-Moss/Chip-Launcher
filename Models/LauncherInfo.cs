@@ -2,5 +2,5 @@
 
 public class LauncherInfo
 {
-    public readonly string Version = "1.1.1";
+    public readonly string Version = "1.2.0";
 }

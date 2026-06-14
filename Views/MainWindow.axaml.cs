@@ -133,6 +133,7 @@ public partial class MainWindow : SukiWindow
         SideMenuMods.IsSelected = false;
         SideMenuSkin.IsSelected = false;
         SideMenuSkinDownload.IsSelected = false;
+        SideMenuModDownload.IsSelected = false;
         SideMenuNews.IsSelected = false;
         SideMenuSettings.IsSelected = false;
         SideMenuAbout.IsSelected = false;
@@ -142,6 +143,7 @@ public partial class MainWindow : SukiWindow
             "Mods" => SideMenuMods,
             "Skin" => SideMenuSkin,
             "皮肤下载" => SideMenuSkinDownload,
+            "ModDownload" => SideMenuModDownload,
             "News" => SideMenuNews,
             "Settings" => SideMenuSettings,
             _ => SideMenuAbout
